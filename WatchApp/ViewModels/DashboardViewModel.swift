@@ -19,6 +19,7 @@ final class DashboardViewModel: ObservableObject {
     @Published var bodyFatPercentage: Double?
     @Published var leanBodyMass: Double?
     @Published var recentLoads: [DailyTrainingLoad] = []
+    @Published var userProfile: UserProfile?
     @Published var isLoading = false
     @Published var errorMessage: String?
 
@@ -92,6 +93,10 @@ final class DashboardViewModel: ObservableObject {
         self.bodyMass = 72.5
         self.bodyFatPercentage = 15.8
         self.leanBodyMass = 61.0
+
+        let profile = UserProfile()
+        profile.restingHR = 52
+        self.userProfile = profile
 
         let now = Date()
         let cal = Calendar.current
@@ -168,6 +173,7 @@ final class DashboardViewModel: ObservableObject {
     private func processWorkouts(context: ModelContext) async {
         do {
             let profile = fetchOrCreateProfile(context: context)
+            self.userProfile = profile
             let workouts = try await hk.fetchWorkouts(daysBack: 90)
 
             for workout in workouts {

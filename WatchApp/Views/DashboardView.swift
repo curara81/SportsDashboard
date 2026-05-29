@@ -68,12 +68,33 @@ struct DashboardView: View {
                             .padding()
                     } else {
                         readinessCard
-                        trainingBalanceCard
+
+                        NavigationLink {
+                            WeeklyTrendView(loads: vm.recentLoads)
+                        } label: {
+                            trainingBalanceCard
+                        }
+                        .buttonStyle(.plain)
+
                         acwrCard
-                        hrvStatusCard
+
+                        NavigationLink {
+                            HRZonesView(profile: vm.userProfile ?? UserProfile())
+                        } label: {
+                            hrvStatusCard
+                        }
+                        .buttonStyle(.plain)
+
                         sleepCard
                         bodyCompositionCard
-                        rhrCard
+
+                        NavigationLink {
+                            TrainingHistoryView(loads: vm.recentLoads)
+                        } label: {
+                            rhrCard
+                        }
+                        .buttonStyle(.plain)
+
                         hrvChartCard
                     }
                     Spacer(minLength: 8)
@@ -513,17 +534,39 @@ struct DashboardView: View {
 
 // MARK: - Status Badge
 
-private struct StatusBadge: View {
+struct StatusBadge: View {
     let label: String
 
     var body: some View {
         Text(label)
             .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(DS.badgeTextColor(for: label))
+            .foregroundStyle(badgeTextColor)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .background(DS.badgeColor(for: label))
+            .background(badgeBgColor)
             .clipShape(Capsule())
+    }
+
+    private var badgeBgColor: Color {
+        switch label {
+        case "우수", "최상 컨디션", "양호", "적정", "Balanced":
+            return Color(red: 0.3, green: 0.85, blue: 0.45).opacity(0.2)
+        case "주의", "보통":
+            return Color(red: 1.0, green: 0.65, blue: 0.2).opacity(0.2)
+        default:
+            return Color(red: 1.0, green: 0.35, blue: 0.35).opacity(0.2)
+        }
+    }
+
+    private var badgeTextColor: Color {
+        switch label {
+        case "우수", "최상 컨디션", "양호", "적정", "Balanced":
+            return Color(red: 0.3, green: 0.85, blue: 0.45)
+        case "주의", "보통":
+            return Color(red: 1.0, green: 0.65, blue: 0.2)
+        default:
+            return Color(red: 1.0, green: 0.35, blue: 0.35)
+        }
     }
 }
 
