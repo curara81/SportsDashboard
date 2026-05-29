@@ -103,6 +103,9 @@ struct DashboardView: View {
                         loadFocusCard
                         recoveryCard
 
+                        #if os(watchOS)
+                        workoutStartButton
+                        #endif
                         quickLinks
                     }
                     Spacer(minLength: 8)
@@ -742,6 +745,36 @@ struct DashboardView: View {
             }
         }
     }
+
+    // MARK: - Workout Start Button
+    #if os(watchOS)
+    private var workoutStartButton: some View {
+        NavigationLink {
+            WorkoutStartView()
+        } label: {
+            HStack {
+                Image(systemName: "play.circle.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(DS.green)
+                Text("운동 시작")
+                    .font(.system(size: 15, weight: .bold))
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10))
+                    .foregroundStyle(DS.dimText)
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
+            .background(DS.green.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(DS.green.opacity(0.3), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+    #endif
 
     // MARK: - Quick Links
 

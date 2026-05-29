@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSHealthShareUsageDescription</key>
+	<string>수면, 심박수, HRV, 체성분 데이터를 분석하여 훈련 준비도와 회복 상태를 표시합니다.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>이 앱은 건강 데이터를 읽기만 하며 기록하지 않습니다.</string>
+</dict>
+</plist>

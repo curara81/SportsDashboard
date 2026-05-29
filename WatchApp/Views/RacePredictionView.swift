@@ -83,49 +83,40 @@ struct RacePredictionView: View {
             )
             let isSame = abs(target.km - recentDistance) < 0.01
 
-            if isSame {
-                CardView {
+            CardView {
+                VStack(spacing: 6) {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(target.name)
                                 .font(.system(size: 14, weight: .bold))
-                                .foregroundStyle(Color(white: 0.55))
+                                .foregroundStyle(isSame ? Color(white: 0.55) : .white)
                             Text("\(target.km, specifier: "%.1f") km")
                                 .font(.system(size: 9))
                                 .foregroundStyle(Color(white: 0.55))
                         }
                         Spacer()
-                        Text(formatTime(baseTime))
-                            .font(.system(size: 16, weight: .bold, design: .monospaced))
-                            .foregroundStyle(Color(white: 0.55))
-                        Text("기준")
-                            .font(.system(size: 9))
-                            .foregroundStyle(Color(white: 0.4))
+                        if isSame {
+                            Text(formatTime(baseTime))
+                                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                .foregroundStyle(Color(white: 0.55))
+                            Text("기준")
+                                .font(.system(size: 9))
+                                .foregroundStyle(Color(white: 0.4))
+                        } else {
+                            Text(formatTime(predicted))
+                                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                .foregroundStyle(Color(red: 0.3, green: 0.85, blue: 0.45))
+                        }
                     }
-                }
-            } else {
-                NavigationLink {
-                    PaceWorkoutView(
-                        targetDistance: target.name,
-                        targetDistanceKm: target.km,
-                        targetTimeSeconds: predicted
-                    )
-                } label: {
-                    CardView {
-                        VStack(spacing: 6) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(target.name)
-                                        .font(.system(size: 14, weight: .bold))
-                                    Text("\(target.km, specifier: "%.1f") km")
-                                        .font(.system(size: 9))
-                                        .foregroundStyle(Color(white: 0.55))
-                                }
-                                Spacer()
-                                Text(formatTime(predicted))
-                                    .font(.system(size: 16, weight: .bold, design: .monospaced))
-                                    .foregroundStyle(Color(red: 0.3, green: 0.85, blue: 0.45))
-                            }
+                    #if os(watchOS)
+                    if !isSame {
+                        NavigationLink {
+                            PaceWorkoutView(
+                                targetDistance: target.name,
+                                targetDistanceKm: target.km,
+                                targetTimeSeconds: predicted
+                            )
+                        } label: {
                             HStack {
                                 Image(systemName: "figure.run")
                                     .font(.system(size: 9))
@@ -137,9 +128,10 @@ struct RacePredictionView: View {
                             }
                             .foregroundStyle(Color(red: 0.35, green: 0.65, blue: 1.0))
                         }
+                        .buttonStyle(.plain)
                     }
+                    #endif
                 }
-                .buttonStyle(.plain)
             }
         }
     }

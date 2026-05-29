@@ -1,3 +1,4 @@
+#if os(watchOS)
 import SwiftUI
 
 struct PaceWorkoutView: View {
@@ -78,7 +79,7 @@ struct PaceWorkoutView: View {
                 }
 
                 Button {
-                    manager.startWorkout(targetPace: targetPacePerKm)
+                    manager.startWorkout(type: .running, targetPace: targetPacePerKm)
                 } label: {
                     HStack {
                         Image(systemName: "play.fill")
@@ -294,6 +295,7 @@ struct PaceWorkoutView: View {
         case .tooFast: return "hare.fill"
         case .onTarget: return "checkmark.circle.fill"
         case .tooSlow: return "tortoise.fill"
+        case .free: return "figure.run"
         }
     }
 
@@ -302,6 +304,7 @@ struct PaceWorkoutView: View {
         case .tooFast: return Color(red: 1.0, green: 0.65, blue: 0.2)
         case .onTarget: return Color(red: 0.3, green: 0.85, blue: 0.45)
         case .tooSlow: return Color(red: 1.0, green: 0.35, blue: 0.35)
+        case .free: return Color(red: 0.3, green: 0.85, blue: 0.45)
         }
     }
 
@@ -329,3 +332,4 @@ struct PaceWorkoutView: View {
         return String(format: "%d:%02d", m, s)
     }
 }
+#endif

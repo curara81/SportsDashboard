@@ -8,48 +8,117 @@
 
 /* Begin PBXBuildFile section */
 		0130584F6CA3C97EC3267B31 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BE93B38EECA80F815893910 /* UserProfile.swift */; };
-		08321439248653663FE78C01 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60993B54325ADD2F3611288 /* DashboardView.swift */; };
+		023F37D0E1C81E24CD50341A /* HRZonesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A7B5CB9A5C5FA603393298 /* HRZonesView.swift */; };
+		0D50AC940E4F8B0E74758BAB /* RunningDynamicsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B2371AB742E74FE3F0E803B /* RunningDynamicsView.swift */; };
+		0E2263994D46E88B91351E0D /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C42844A9FD850D06198ABDBB /* HealthKit.framework */; };
+		113433BE19EB0182C7B57377 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6340F808AB4BE5F597B0E8F /* DashboardView.swift */; };
+		152D4038A951B58F0154700C /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ADAB89F84D5E76A35622CEFD /* MapKit.framework */; };
 		1CDA46BC1B54B1818F403978 /* DatedValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 429066673D0F8AC0D96FB335 /* DatedValue.swift */; };
+		210A0FF15F042424615BB5CB /* RacePredictionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8EAEC2EED3E55297E5534CD /* RacePredictionView.swift */; };
+		28693B4F82CA1CB70734B8C5 /* TrainingHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D95B363F8249B6ABE146E30 /* TrainingHistoryView.swift */; };
+		287990F8CBF8ECDFC54532FD /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A29367BC86814479A1F6DA4 /* DashboardViewModel.swift */; };
+		2A7B6B7802ADA8B29FCF3F78 /* WeeklyTrendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D351CAEF42F5FDB32BF780C /* WeeklyTrendView.swift */; };
+		2B398C9320A708EBE3211B35 /* WorkoutStartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4966895226CF417C35A58876 /* WorkoutStartView.swift */; };
+		31B1D569A90E29D89994EE6E /* PaceWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43669518FEB30FB43F37937A /* PaceWorkoutView.swift */; };
+		340D25925C5AA31E3FED51E1 /* WeeklyTrendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D351CAEF42F5FDB32BF780C /* WeeklyTrendView.swift */; };
+		3CD7B793606790FBEA0E6891 /* WorkoutRouteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A69186A5CDDA914558D144C0 /* WorkoutRouteView.swift */; };
+		3DB48F4FCAB3033668C82DE2 /* Charts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D1449F2FCBC9AC3B2ACA523 /* Charts.framework */; };
+		402A040AA697E65E6A6A6688 /* RunningDynamicsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B2371AB742E74FE3F0E803B /* RunningDynamicsView.swift */; };
 		43A6E669E91C34BD0104FE80 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 49E59909A0FBFEDC9310098B /* Assets.xcassets */; };
-		7ECC14A67A3F0AE986069B9D /* WeeklyTrendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4111C1BABE8285BEE21DDDCA /* WeeklyTrendView.swift */; };
+		46F47A3E39B7DFE6375AB969 /* HRZonesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A7B5CB9A5C5FA603393298 /* HRZonesView.swift */; };
+		4747B7F4A5E02E3D0CD957FB /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 63EFD148B89752B01CC028EB /* CoreLocation.framework */; };
+		4862D5C5B0A935260C688D4E /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BE93B38EECA80F815893910 /* UserProfile.swift */; };
+		4A5BB785C944844B7FA3B979 /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81BE111D2D5EFFA7D13271BE /* WatchConnectivity.framework */; };
+		4EAF2629806BBD2B8230CEB7 /* BodyCompositionRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = C075346E22BE601D2B79C383 /* BodyCompositionRecord.swift */; };
+		5C76E3D8DA847B44FF06252D /* iOSDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC4D2C56D1B2C26C59E99ECE /* iOSDashboardView.swift */; };
+		5F193DCC5A32F5A80D407D32 /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ADAB89F84D5E76A35622CEFD /* MapKit.framework */; };
+		611186E599E3E2C9EB220C31 /* SportsDashboardiOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D86F06585C621FD72B2FD9E /* SportsDashboardiOSApp.swift */; };
+		62531ACEA12146367751B1DB /* DailyReadiness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F75F2448069880E7B41520A /* DailyReadiness.swift */; };
+		7349459B920B3D83F8DA93BE /* DatedValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 429066673D0F8AC0D96FB335 /* DatedValue.swift */; };
+		741235D9D2347EE2D99B56FB /* TrainingHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D95B363F8249B6ABE146E30 /* TrainingHistoryView.swift */; };
+		75A7EBC197C48F27D565933C /* SwiftData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A32E7B795D99BE831991E804 /* SwiftData.framework */; };
+		763A999567AEB7B8AD437B38 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A29367BC86814479A1F6DA4 /* DashboardViewModel.swift */; };
+		8ADDC0277E26089A769C0FB7 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 765C9BE79B2EA317E2D06B7A /* SharedComponents.swift */; };
+		98BE74827A1CC734BA9677AF /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCE7362D8C70F2A3494E452 /* HealthKitManager.swift */; };
 		A1FFB9FD40FCFCEF2E682ACE /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCE7362D8C70F2A3494E452 /* HealthKitManager.swift */; };
+		A30F74D8B9FA7FB64B15F39D /* WorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 204C349968063E78EC90EDB1 /* WorkoutManager.swift */; };
+		ACE21A5AB3AA377B6A9F0E45 /* DailyTrainingLoad.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C287B26A201D46CE8330FC /* DailyTrainingLoad.swift */; };
+		AE352E4CA59849F43D492D45 /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81BE111D2D5EFFA7D13271BE /* WatchConnectivity.framework */; };
+		BA5D86480A73AE2688563E7F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 89C80097599AA6C038610B87 /* Assets.xcassets */; };
 		BBE0BAE95EA898BD92CA98A2 /* DailyReadiness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F75F2448069880E7B41520A /* DailyReadiness.swift */; };
 		C0A3B895270C8E2099D735FA /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C42844A9FD850D06198ABDBB /* HealthKit.framework */; };
 		C63859691B76401648F567EA /* SwiftData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A32E7B795D99BE831991E804 /* SwiftData.framework */; };
+		C703488F30853EBD9E859404 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 765C9BE79B2EA317E2D06B7A /* SharedComponents.swift */; };
+		CA177B7AF665D863298A0B32 /* iOSSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06AA41D554B276327DC4E7E4 /* iOSSettingsView.swift */; };
+		CB0ADE74DDFA5883BD74EC71 /* WorkoutRouteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A69186A5CDDA914558D144C0 /* WorkoutRouteView.swift */; };
+		CE15F5826187D487184ACCAF /* SyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CED1B4A231F68A58622E095 /* SyncManager.swift */; };
+		CF38388B7996133480945200 /* RacePredictionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8EAEC2EED3E55297E5534CD /* RacePredictionView.swift */; };
 		D282AAA950143CFC83A384BF /* DailyTrainingLoad.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C287B26A201D46CE8330FC /* DailyTrainingLoad.swift */; };
-		D289BE7DAD4BE34D88051C16 /* TrainingHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8864CF115A702E1A19655521 /* TrainingHistoryView.swift */; };
 		D66D019B696FAEA1175893E5 /* SportsDashboardApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC4F510203B0C7B50FCEC31B /* SportsDashboardApp.swift */; };
+		D86FBA8662C70CC48527BE92 /* SyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CED1B4A231F68A58622E095 /* SyncManager.swift */; };
 		D936E6B6888D6E7F580C987E /* MetricsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98D9400B052753FAB52877D2 /* MetricsEngine.swift */; };
-		DBF5143DD0C6C56E0ED3E117 /* HRZonesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15BE3344642732DB96848968 /* HRZonesView.swift */; };
-		E6EFBB461FCB397BF772B148 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D6E0C3FF077C11DC497879 /* DashboardViewModel.swift */; };
+		E0BC412E26E85B0ED4C9ED80 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE7EE8AC9A0C7FD61514FCA3 /* SettingsView.swift */; };
 		E75280CDA1CD510F73E1A9D2 /* Charts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D1449F2FCBC9AC3B2ACA523 /* Charts.framework */; };
+		EFAEE720621330D5A6B73F50 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 63EFD148B89752B01CC028EB /* CoreLocation.framework */; };
+		F0E6C34FC70AECD841A1EA73 /* MetricsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98D9400B052753FAB52877D2 /* MetricsEngine.swift */; };
 		F4C02C323D65A268017841DD /* BodyCompositionRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = C075346E22BE601D2B79C383 /* BodyCompositionRecord.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		15BE3344642732DB96848968 /* HRZonesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HRZonesView.swift; sourceTree = "<group>"; };
+		06AA41D554B276327DC4E7E4 /* iOSSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSSettingsView.swift; sourceTree = "<group>"; };
+		204C349968063E78EC90EDB1 /* WorkoutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutManager.swift; sourceTree = "<group>"; };
 		22190627BED0569B07A54E1D /* SportsDashboard.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SportsDashboard.entitlements; sourceTree = "<group>"; };
-		4111C1BABE8285BEE21DDDCA /* WeeklyTrendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyTrendView.swift; sourceTree = "<group>"; };
+		3D86F06585C621FD72B2FD9E /* SportsDashboardiOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SportsDashboardiOSApp.swift; sourceTree = "<group>"; };
 		429066673D0F8AC0D96FB335 /* DatedValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatedValue.swift; sourceTree = "<group>"; };
+		43669518FEB30FB43F37937A /* PaceWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaceWorkoutView.swift; sourceTree = "<group>"; };
+		4966895226CF417C35A58876 /* WorkoutStartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutStartView.swift; sourceTree = "<group>"; };
 		49E59909A0FBFEDC9310098B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		5AAEFFA9C54FC50E3F4C7214 /* SportsDashboard Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SportsDashboard Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4A29367BC86814479A1F6DA4 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
+		4D95B363F8249B6ABE146E30 /* TrainingHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingHistoryView.swift; sourceTree = "<group>"; };
+		55C58E852EA9B9A422184218 /* SportsDashboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SportsDashboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5AAEFFA9C54FC50E3F4C7214 /* SportsDashboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SportsDashboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		63EFD148B89752B01CC028EB /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		6D1449F2FCBC9AC3B2ACA523 /* Charts.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Charts.framework; path = System/Library/Frameworks/Charts.framework; sourceTree = SDKROOT; };
 		6F75F2448069880E7B41520A /* DailyReadiness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyReadiness.swift; sourceTree = "<group>"; };
-		8864CF115A702E1A19655521 /* TrainingHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingHistoryView.swift; sourceTree = "<group>"; };
+		765C9BE79B2EA317E2D06B7A /* SharedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedComponents.swift; sourceTree = "<group>"; };
+		7CED1B4A231F68A58622E095 /* SyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncManager.swift; sourceTree = "<group>"; };
+		81BE111D2D5EFFA7D13271BE /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = System/Library/Frameworks/WatchConnectivity.framework; sourceTree = SDKROOT; };
+		89C80097599AA6C038610B87 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		8B2371AB742E74FE3F0E803B /* RunningDynamicsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunningDynamicsView.swift; sourceTree = "<group>"; };
 		8BE93B38EECA80F815893910 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		98D9400B052753FAB52877D2 /* MetricsEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsEngine.swift; sourceTree = "<group>"; };
+		9D351CAEF42F5FDB32BF780C /* WeeklyTrendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyTrendView.swift; sourceTree = "<group>"; };
+		A0A7B5CB9A5C5FA603393298 /* HRZonesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HRZonesView.swift; sourceTree = "<group>"; };
 		A32E7B795D99BE831991E804 /* SwiftData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftData.framework; path = System/Library/Frameworks/SwiftData.framework; sourceTree = SDKROOT; };
-		B60993B54325ADD2F3611288 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		A6340F808AB4BE5F597B0E8F /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		A69186A5CDDA914558D144C0 /* WorkoutRouteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutRouteView.swift; sourceTree = "<group>"; };
+		AA608CD14DC9C5649EF6A51D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		ADAB89F84D5E76A35622CEFD /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
 		B684ABF4E935AD58DE085304 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		BDCE7362D8C70F2A3494E452 /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
 		C075346E22BE601D2B79C383 /* BodyCompositionRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyCompositionRecord.swift; sourceTree = "<group>"; };
-		C2D6E0C3FF077C11DC497879 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
 		C42844A9FD850D06198ABDBB /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
+		C8EAEC2EED3E55297E5534CD /* RacePredictionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RacePredictionView.swift; sourceTree = "<group>"; };
+		CC4D2C56D1B2C26C59E99ECE /* iOSDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSDashboardView.swift; sourceTree = "<group>"; };
 		DC4F510203B0C7B50FCEC31B /* SportsDashboardApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SportsDashboardApp.swift; sourceTree = "<group>"; };
 		F4C287B26A201D46CE8330FC /* DailyTrainingLoad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyTrainingLoad.swift; sourceTree = "<group>"; };
+		FE7EE8AC9A0C7FD61514FCA3 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		0434F19A95853F5602AF2C06 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0E2263994D46E88B91351E0D /* HealthKit.framework in Frameworks */,
+				75A7EBC197C48F27D565933C /* SwiftData.framework in Frameworks */,
+				3DB48F4FCAB3033668C82DE2 /* Charts.framework in Frameworks */,
+				5F193DCC5A32F5A80D407D32 /* MapKit.framework in Frameworks */,
+				4747B7F4A5E02E3D0CD957FB /* CoreLocation.framework in Frameworks */,
+				4A5BB785C944844B7FA3B979 /* WatchConnectivity.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		79B32340658F01C2BC7F333B /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -57,6 +126,9 @@
 				C0A3B895270C8E2099D735FA /* HealthKit.framework in Frameworks */,
 				C63859691B76401648F567EA /* SwiftData.framework in Frameworks */,
 				E75280CDA1CD510F73E1A9D2 /* Charts.framework in Frameworks */,
+				152D4038A951B58F0154700C /* MapKit.framework in Frameworks */,
+				EFAEE720621330D5A6B73F50 /* CoreLocation.framework in Frameworks */,
+				AE352E4CA59849F43D492D45 /* WatchConnectivity.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -66,7 +138,8 @@
 		19BC1B93353D2D6883B0902D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				5AAEFFA9C54FC50E3F4C7214 /* SportsDashboard Watch App.app */,
+				5AAEFFA9C54FC50E3F4C7214 /* SportsDashboard.app */,
+				55C58E852EA9B9A422184218 /* SportsDashboard.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -76,26 +149,56 @@
 			children = (
 				ADBF246BCF98CC17C94AC71D /* Models */,
 				C3A18290A4ADE983151E8720 /* Services */,
+				7069C15C7D0AE80F58B7BFF0 /* Views */,
 			);
 			path = Shared;
+			sourceTree = "<group>";
+		};
+		493260B729CCA1E330783AFA /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				204C349968063E78EC90EDB1 /* WorkoutManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		4AA9C91B1C7E5DD83ECD879F /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A6340F808AB4BE5F597B0E8F /* DashboardView.swift */,
+				A0A7B5CB9A5C5FA603393298 /* HRZonesView.swift */,
+				43669518FEB30FB43F37937A /* PaceWorkoutView.swift */,
+				C8EAEC2EED3E55297E5534CD /* RacePredictionView.swift */,
+				8B2371AB742E74FE3F0E803B /* RunningDynamicsView.swift */,
+				FE7EE8AC9A0C7FD61514FCA3 /* SettingsView.swift */,
+				4D95B363F8249B6ABE146E30 /* TrainingHistoryView.swift */,
+				9D351CAEF42F5FDB32BF780C /* WeeklyTrendView.swift */,
+				A69186A5CDDA914558D144C0 /* WorkoutRouteView.swift */,
+				4966895226CF417C35A58876 /* WorkoutStartView.swift */,
+			);
+			name = Views;
+			path = WatchApp/Views;
+			sourceTree = "<group>";
+		};
+		7069C15C7D0AE80F58B7BFF0 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				765C9BE79B2EA317E2D06B7A /* SharedComponents.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 		9CF41D19C177D0EE78AFF974 = {
 			isa = PBXGroup;
 			children = (
+				C9D9931D1290E6841A95133B /* iOSApp */,
 				2E77882A7998EA1E8A2D32B6 /* Shared */,
+				C268E0589640F3DF4F1B44F6 /* ViewModels */,
+				4AA9C91B1C7E5DD83ECD879F /* Views */,
 				FA4E0C5DCAD62C181022A36D /* WatchApp */,
 				E340763BE495229CAC4E083F /* Frameworks */,
 				19BC1B93353D2D6883B0902D /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		9F8DE83DD39B37E8BBBBB536 /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-				C2D6E0C3FF077C11DC497879 /* DashboardViewModel.swift */,
-			);
-			path = ViewModels;
 			sourceTree = "<group>";
 		};
 		ADBF246BCF98CC17C94AC71D /* Models */ = {
@@ -110,32 +213,54 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
+		C268E0589640F3DF4F1B44F6 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				4A29367BC86814479A1F6DA4 /* DashboardViewModel.swift */,
+			);
+			name = ViewModels;
+			path = WatchApp/ViewModels;
+			sourceTree = "<group>";
+		};
 		C3A18290A4ADE983151E8720 /* Services */ = {
 			isa = PBXGroup;
 			children = (
 				BDCE7362D8C70F2A3494E452 /* HealthKitManager.swift */,
 				98D9400B052753FAB52877D2 /* MetricsEngine.swift */,
+				7CED1B4A231F68A58622E095 /* SyncManager.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		C9D9931D1290E6841A95133B /* iOSApp */ = {
+			isa = PBXGroup;
+			children = (
+				89C80097599AA6C038610B87 /* Assets.xcassets */,
+				AA608CD14DC9C5649EF6A51D /* Info.plist */,
+				3D86F06585C621FD72B2FD9E /* SportsDashboardiOSApp.swift */,
+				EDBDC40DDD8361DDC377C22A /* Views */,
+			);
+			path = iOSApp;
 			sourceTree = "<group>";
 		};
 		E340763BE495229CAC4E083F /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				6D1449F2FCBC9AC3B2ACA523 /* Charts.framework */,
+				63EFD148B89752B01CC028EB /* CoreLocation.framework */,
 				C42844A9FD850D06198ABDBB /* HealthKit.framework */,
+				ADAB89F84D5E76A35622CEFD /* MapKit.framework */,
 				A32E7B795D99BE831991E804 /* SwiftData.framework */,
+				81BE111D2D5EFFA7D13271BE /* WatchConnectivity.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		F4F81C43DEDC95A7731EC44D /* Views */ = {
+		EDBDC40DDD8361DDC377C22A /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				B60993B54325ADD2F3611288 /* DashboardView.swift */,
-				15BE3344642732DB96848968 /* HRZonesView.swift */,
-				8864CF115A702E1A19655521 /* TrainingHistoryView.swift */,
-				4111C1BABE8285BEE21DDDCA /* WeeklyTrendView.swift */,
+				CC4D2C56D1B2C26C59E99ECE /* iOSDashboardView.swift */,
+				06AA41D554B276327DC4E7E4 /* iOSSettingsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -147,8 +272,7 @@
 				B684ABF4E935AD58DE085304 /* Info.plist */,
 				22190627BED0569B07A54E1D /* SportsDashboard.entitlements */,
 				DC4F510203B0C7B50FCEC31B /* SportsDashboardApp.swift */,
-				9F8DE83DD39B37E8BBBBB536 /* ViewModels */,
-				F4F81C43DEDC95A7731EC44D /* Views */,
+				493260B729CCA1E330783AFA /* Services */,
 			);
 			path = WatchApp;
 			sourceTree = "<group>";
@@ -172,7 +296,26 @@
 			packageProductDependencies = (
 			);
 			productName = "SportsDashboard Watch App";
-			productReference = 5AAEFFA9C54FC50E3F4C7214 /* SportsDashboard Watch App.app */;
+			productReference = 5AAEFFA9C54FC50E3F4C7214 /* SportsDashboard.app */;
+			productType = "com.apple.product-type.application";
+		};
+		6EDFE08930B81618383275E6 /* SportsDashboard */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EB87424AD00C5E37F52FCE9D /* Build configuration list for PBXNativeTarget "SportsDashboard" */;
+			buildPhases = (
+				C5327D51F73AEECEF3DAD005 /* Sources */,
+				709842F19119BDE1590E5EEC /* Resources */,
+				0434F19A95853F5602AF2C06 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SportsDashboard;
+			packageProductDependencies = (
+			);
+			productName = SportsDashboard;
+			productReference = 55C58E852EA9B9A422184218 /* SportsDashboard.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -185,6 +328,9 @@
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					1CF2C1C259E9EFDDC55639E9 = {
+						ProvisioningStyle = Automatic;
+					};
+					6EDFE08930B81618383275E6 = {
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -203,6 +349,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				6EDFE08930B81618383275E6 /* SportsDashboard */,
 				1CF2C1C259E9EFDDC55639E9 /* SportsDashboard Watch App */,
 			);
 		};
@@ -217,6 +364,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		709842F19119BDE1590E5EEC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BA5D86480A73AE2688563E7F /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -227,16 +382,51 @@
 				F4C02C323D65A268017841DD /* BodyCompositionRecord.swift in Sources */,
 				BBE0BAE95EA898BD92CA98A2 /* DailyReadiness.swift in Sources */,
 				D282AAA950143CFC83A384BF /* DailyTrainingLoad.swift in Sources */,
-				08321439248653663FE78C01 /* DashboardView.swift in Sources */,
-				E6EFBB461FCB397BF772B148 /* DashboardViewModel.swift in Sources */,
+				113433BE19EB0182C7B57377 /* DashboardView.swift in Sources */,
+				287990F8CBF8ECDFC54532FD /* DashboardViewModel.swift in Sources */,
 				1CDA46BC1B54B1818F403978 /* DatedValue.swift in Sources */,
-				DBF5143DD0C6C56E0ED3E117 /* HRZonesView.swift in Sources */,
+				023F37D0E1C81E24CD50341A /* HRZonesView.swift in Sources */,
 				A1FFB9FD40FCFCEF2E682ACE /* HealthKitManager.swift in Sources */,
 				D936E6B6888D6E7F580C987E /* MetricsEngine.swift in Sources */,
+				31B1D569A90E29D89994EE6E /* PaceWorkoutView.swift in Sources */,
+				CF38388B7996133480945200 /* RacePredictionView.swift in Sources */,
+				402A040AA697E65E6A6A6688 /* RunningDynamicsView.swift in Sources */,
+				E0BC412E26E85B0ED4C9ED80 /* SettingsView.swift in Sources */,
+				8ADDC0277E26089A769C0FB7 /* SharedComponents.swift in Sources */,
 				D66D019B696FAEA1175893E5 /* SportsDashboardApp.swift in Sources */,
-				D289BE7DAD4BE34D88051C16 /* TrainingHistoryView.swift in Sources */,
+				CE15F5826187D487184ACCAF /* SyncManager.swift in Sources */,
+				28693B4F82CA1CB70734B8C5 /* TrainingHistoryView.swift in Sources */,
 				0130584F6CA3C97EC3267B31 /* UserProfile.swift in Sources */,
-				7ECC14A67A3F0AE986069B9D /* WeeklyTrendView.swift in Sources */,
+				2A7B6B7802ADA8B29FCF3F78 /* WeeklyTrendView.swift in Sources */,
+				A30F74D8B9FA7FB64B15F39D /* WorkoutManager.swift in Sources */,
+				3CD7B793606790FBEA0E6891 /* WorkoutRouteView.swift in Sources */,
+				2B398C9320A708EBE3211B35 /* WorkoutStartView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C5327D51F73AEECEF3DAD005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4EAF2629806BBD2B8230CEB7 /* BodyCompositionRecord.swift in Sources */,
+				62531ACEA12146367751B1DB /* DailyReadiness.swift in Sources */,
+				ACE21A5AB3AA377B6A9F0E45 /* DailyTrainingLoad.swift in Sources */,
+				763A999567AEB7B8AD437B38 /* DashboardViewModel.swift in Sources */,
+				7349459B920B3D83F8DA93BE /* DatedValue.swift in Sources */,
+				46F47A3E39B7DFE6375AB969 /* HRZonesView.swift in Sources */,
+				98BE74827A1CC734BA9677AF /* HealthKitManager.swift in Sources */,
+				F0E6C34FC70AECD841A1EA73 /* MetricsEngine.swift in Sources */,
+				210A0FF15F042424615BB5CB /* RacePredictionView.swift in Sources */,
+				0D50AC940E4F8B0E74758BAB /* RunningDynamicsView.swift in Sources */,
+				C703488F30853EBD9E859404 /* SharedComponents.swift in Sources */,
+				611186E599E3E2C9EB220C31 /* SportsDashboardiOSApp.swift in Sources */,
+				D86FBA8662C70CC48527BE92 /* SyncManager.swift in Sources */,
+				741235D9D2347EE2D99B56FB /* TrainingHistoryView.swift in Sources */,
+				4862D5C5B0A935260C688D4E /* UserProfile.swift in Sources */,
+				340D25925C5AA31E3FED51E1 /* WeeklyTrendView.swift in Sources */,
+				CB0ADE74DDFA5883BD74EC71 /* WorkoutRouteView.swift in Sources */,
+				5C76E3D8DA847B44FF06252D /* iOSDashboardView.swift in Sources */,
+				CA177B7AF665D863298A0B32 /* iOSSettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -249,6 +439,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = WatchApp/SportsDashboard.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = GFJK8DP9ZC;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = WatchApp/Info.plist;
 				INSTALL_PATH = "$(LOCAL_APPS_DIR)";
@@ -268,6 +459,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = WatchApp/SportsDashboard.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = GFJK8DP9ZC;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = WatchApp/Info.plist;
 				INSTALL_PATH = "$(LOCAL_APPS_DIR)";
@@ -329,11 +521,52 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = watchos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.9;
 				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		2AF83FFA9D7A14BB2B55EC9E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = GFJK8DP9ZC;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = iOSApp/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.curara.SportsDashboard;
+				PRODUCT_NAME = SportsDashboard;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		3075274C9D5B91795EEF3DA7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = GFJK8DP9ZC;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = iOSApp/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.curara.SportsDashboard;
+				PRODUCT_NAME = SportsDashboard;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -392,7 +625,6 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = watchos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.9;
@@ -417,6 +649,15 @@
 			buildConfigurations = (
 				064B191E8C98483C80329578 /* Debug */,
 				05B5F114F7FA0845F406C63D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EB87424AD00C5E37F52FCE9D /* Build configuration list for PBXNativeTarget "SportsDashboard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2AF83FFA9D7A14BB2B55EC9E /* Debug */,
+				3075274C9D5B91795EEF3DA7 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
