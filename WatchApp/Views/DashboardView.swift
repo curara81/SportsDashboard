@@ -85,7 +85,10 @@ struct DashboardView: View {
                         }
                         .buttonStyle(.plain)
 
+                        trainingStatusCard
+                        vo2maxCard
                         sleepCard
+                        sleepStagesCard
                         bodyCompositionCard
 
                         NavigationLink {
@@ -96,6 +99,11 @@ struct DashboardView: View {
                         .buttonStyle(.plain)
 
                         hrvChartCard
+                        runningDynamicsCard
+                        loadFocusCard
+                        recoveryCard
+
+                        quickLinks
                     }
                     Spacer(minLength: 8)
                 }
@@ -103,6 +111,17 @@ struct DashboardView: View {
             }
             .background(DS.pageBg)
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        SettingsView()
+                    } label: {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 12))
+                            .foregroundStyle(DS.dimText)
+                    }
+                }
+            }
             .task {
                 await vm.authorize()
                 await vm.loadMorningReport(context: modelContext)
@@ -484,6 +503,288 @@ struct DashboardView: View {
         }
     }
 
+    // MARK: - Training Status
+
+    private var trainingStatusCard: some View {
+        CardView {
+            VStack(alignment: .leading, spacing: 6) {
+                Label("트레이닝 상태", systemImage: "chart.bar.fill")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(DS.dimText)
+
+                HStack {
+                    Image(systemName: vm.trainingStatus.icon)
+                        .font(.system(size: 18))
+                        .foregroundStyle(trainingStatusColor(vm.trainingStatus))
+                    Text(vm.trainingStatus.rawValue)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(trainingStatusColor(vm.trainingStatus))
+                    Spacer()
+                    StatusBadge(label: trainingStatusBadge(vm.trainingStatus))
+                }
+            }
+        }
+    }
+
+    // MARK: - VO2max
+
+    private var vo2maxCard: some View {
+        CardView {
+            VStack(alignment: .leading, spacing: 6) {
+                Label("VO2max", systemImage: "lungs.fill")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(DS.dimText)
+
+                if let vo2 = vm.vo2max {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(String(format: "%.1f", vo2))
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundStyle(DS.cyan)
+                        Text("ml/kg/min")
+                            .font(.system(size: 10))
+                            .foregroundStyle(DS.dimText)
+                        Spacer()
+                        if let age = vm.fitnessAge {
+                            VStack(spacing: 1) {
+                                Text("피트니스 나이")
+                                    .font(.system(size: 8))
+                                    .foregroundStyle(DS.dimText)
+                                Text("\(age)세")
+                                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                                    .foregroundStyle(fitnessAgeColor(age, actual: vm.userProfile?.age ?? 30))
+                            }
+                        }
+                    }
+                } else {
+                    Text("VO2max 데이터 없음")
+                        .foregroundStyle(.secondary).font(.caption)
+                }
+            }
+        }
+    }
+
+    // MARK: - Sleep Stages
+
+    private var sleepStagesCard: some View {
+        CardView {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("수면 단계", systemImage: "bed.double.fill")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(DS.dimText)
+
+                if let core = vm.sleepCore, let deep = vm.sleepDeep,
+                   let rem = vm.sleepREM {
+                    let total = core + deep + rem + (vm.sleepAwake ?? 0)
+
+                    if total > 0 {
+                        GeometryReader { geo in
+                            let w = geo.size.width
+                            HStack(spacing: 1) {
+                                Rectangle()
+                                    .fill(DS.blue)
+                                    .frame(width: w * (core / total))
+                                Rectangle()
+                                    .fill(DS.purple)
+                                    .frame(width: w * (deep / total))
+                                Rectangle()
+                                    .fill(DS.cyan)
+                                    .frame(width: w * (rem / total))
+                                if let awake = vm.sleepAwake, awake > 0 {
+                                    Rectangle()
+                                        .fill(DS.orange)
+                                        .frame(width: w * (awake / total))
+                                }
+                            }
+                            .frame(height: 10)
+                            .clipShape(RoundedRectangle(cornerRadius: 5))
+                        }
+                        .frame(height: 10)
+
+                        HStack(spacing: 0) {
+                            sleepStageItem("코어", hours: core, color: DS.blue)
+                            Spacer()
+                            sleepStageItem("깊은", hours: deep, color: DS.purple)
+                            Spacer()
+                            sleepStageItem("REM", hours: rem, color: DS.cyan)
+                            Spacer()
+                            if let awake = vm.sleepAwake {
+                                sleepStageItem("각성", hours: awake, color: DS.orange)
+                            }
+                        }
+                    }
+                } else {
+                    Text("수면 단계 데이터 없음")
+                        .foregroundStyle(.secondary).font(.caption)
+                }
+            }
+        }
+    }
+
+    // MARK: - Running Dynamics (summary card)
+
+    private var runningDynamicsCard: some View {
+        NavigationLink {
+            RunningDynamicsView(
+                power: vm.runningPower,
+                cadence: vm.cadence,
+                gct: vm.groundContactTime,
+                verticalOsc: vm.verticalOscillation,
+                strideLength: vm.strideLength
+            )
+        } label: {
+            CardView {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Label("러닝 다이내믹스", systemImage: "figure.run")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(DS.dimText)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9))
+                            .foregroundStyle(DS.subtle)
+                    }
+
+                    if vm.runningPower != nil || vm.cadence != nil {
+                        HStack(spacing: 0) {
+                            if let p = vm.runningPower {
+                                miniDynamic(label: "파워", value: "\(Int(p))W", color: DS.orange)
+                            }
+                            Spacer()
+                            if let c = vm.cadence {
+                                miniDynamic(label: "케이던스", value: "\(Int(c))", color: DS.blue)
+                            }
+                            Spacer()
+                            if let g = vm.groundContactTime {
+                                miniDynamic(label: "GCT", value: "\(Int(g))ms", color: DS.green)
+                            }
+                            Spacer()
+                            if let s = vm.strideLength {
+                                miniDynamic(label: "보폭", value: String(format: "%.2fm", s), color: DS.cyan)
+                            }
+                        }
+                    } else {
+                        Text("러닝 기록 필요")
+                            .foregroundStyle(.secondary).font(.caption)
+                    }
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Load Focus
+
+    private var loadFocusCard: some View {
+        CardView {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("트레이닝 부하 분포", systemImage: "chart.pie.fill")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(DS.dimText)
+
+                if let focus = vm.loadFocus {
+                    GeometryReader { geo in
+                        let w = geo.size.width
+                        HStack(spacing: 1) {
+                            Rectangle()
+                                .fill(DS.blue)
+                                .frame(width: w * (focus.lowAerobic / 100))
+                            Rectangle()
+                                .fill(DS.orange)
+                                .frame(width: w * (focus.highAerobic / 100))
+                            Rectangle()
+                                .fill(DS.red)
+                                .frame(width: w * (focus.anaerobic / 100))
+                        }
+                        .frame(height: 10)
+                        .clipShape(RoundedRectangle(cornerRadius: 5))
+                    }
+                    .frame(height: 10)
+
+                    HStack(spacing: 0) {
+                        focusItem("저강도", pct: focus.lowAerobic, color: DS.blue)
+                        Spacer()
+                        focusItem("고강도", pct: focus.highAerobic, color: DS.orange)
+                        Spacer()
+                        focusItem("무산소", pct: focus.anaerobic, color: DS.red)
+                    }
+                } else {
+                    Text("부하 분포 데이터 없음")
+                        .foregroundStyle(.secondary).font(.caption)
+                }
+            }
+        }
+    }
+
+    // MARK: - Recovery Time
+
+    private var recoveryCard: some View {
+        CardView {
+            VStack(alignment: .leading, spacing: 6) {
+                Label("회복 시간", systemImage: "clock.arrow.circlepath")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(DS.dimText)
+
+                if let rt = vm.recoveryTime {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("\(rt.hours)")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundStyle(recoveryColor(rt.hours))
+                        Text("시간")
+                            .font(.system(size: 12))
+                            .foregroundStyle(DS.dimText)
+                        Spacer()
+                        StatusBadge(label: rt.label)
+                    }
+                } else {
+                    Text("운동 기록 필요")
+                        .foregroundStyle(.secondary).font(.caption)
+                }
+            }
+        }
+    }
+
+    // MARK: - Quick Links
+
+    private var quickLinks: some View {
+        VStack(spacing: 8) {
+            NavigationLink {
+                RacePredictionView()
+            } label: {
+                CardView {
+                    HStack {
+                        Image(systemName: "flag.checkered")
+                            .foregroundStyle(DS.green)
+                        Text("레이스 예측")
+                            .font(.system(size: 13, weight: .semibold))
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10))
+                            .foregroundStyle(DS.dimText)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+
+            NavigationLink {
+                TrainingHistoryView(loads: vm.recentLoads)
+            } label: {
+                CardView {
+                    HStack {
+                        Image(systemName: "list.bullet.clipboard")
+                            .foregroundStyle(DS.blue)
+                        Text("운동 기록")
+                            .font(.system(size: 13, weight: .semibold))
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10))
+                            .foregroundStyle(DS.dimText)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
     // MARK: - Components
 
     private func subMetric(title: String, value: String, score: Double) -> some View {
@@ -513,6 +814,74 @@ struct DashboardView: View {
         }
     }
 
+    private func sleepStageItem(_ label: String, hours: Double, color: Color) -> some View {
+        VStack(spacing: 1) {
+            Text(label).font(.system(size: 8)).foregroundStyle(color.opacity(0.7))
+            Text(String(format: "%.1fh", hours))
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundStyle(color)
+        }
+    }
+
+    private func miniDynamic(label: String, value: String, color: Color) -> some View {
+        VStack(spacing: 1) {
+            Text(label).font(.system(size: 8)).foregroundStyle(DS.dimText)
+            Text(value)
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundStyle(color)
+        }
+    }
+
+    private func focusItem(_ label: String, pct: Double, color: Color) -> some View {
+        VStack(spacing: 1) {
+            Text(label).font(.system(size: 8)).foregroundStyle(color.opacity(0.7))
+            Text("\(Int(pct))%")
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundStyle(color)
+        }
+    }
+
+    private func trainingStatusColor(_ status: MetricsEngine.TrainingStatus) -> Color {
+        switch status {
+        case .peaking: return DS.green
+        case .productive: return DS.blue
+        case .maintaining: return DS.cyan
+        case .recovery: return DS.purple
+        case .unproductive: return DS.orange
+        case .detraining: return Color(white: 0.55)
+        case .overreaching: return DS.orange
+        case .strained: return DS.red
+        case .noStatus: return DS.dimText
+        }
+    }
+
+    private func trainingStatusBadge(_ status: MetricsEngine.TrainingStatus) -> String {
+        switch status {
+        case .peaking, .productive: return "양호"
+        case .maintaining, .recovery: return "보통"
+        case .unproductive, .detraining: return "주의"
+        case .overreaching, .strained: return "위험"
+        case .noStatus: return "데이터 부족"
+        }
+    }
+
+    private func fitnessAgeColor(_ fitnessAge: Int, actual: Int) -> Color {
+        let diff = fitnessAge - actual
+        if diff <= -5 { return DS.green }
+        if diff <= 0 { return DS.blue }
+        if diff <= 5 { return DS.orange }
+        return DS.red
+    }
+
+    private func recoveryColor(_ hours: Int) -> Color {
+        switch hours {
+        case 0..<18: return DS.green
+        case 18..<36: return DS.blue
+        case 36..<60: return DS.orange
+        default: return DS.red
+        }
+    }
+
     private func acwrColor(_ ratio: Double) -> Color {
         switch ratio {
         case 0.8..<1.3: return DS.green
@@ -532,58 +901,4 @@ struct DashboardView: View {
     }
 }
 
-// MARK: - Status Badge
-
-struct StatusBadge: View {
-    let label: String
-
-    var body: some View {
-        Text(label)
-            .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(badgeTextColor)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(badgeBgColor)
-            .clipShape(Capsule())
-    }
-
-    private var badgeBgColor: Color {
-        switch label {
-        case "우수", "최상 컨디션", "양호", "적정", "Balanced":
-            return Color(red: 0.3, green: 0.85, blue: 0.45).opacity(0.2)
-        case "주의", "보통":
-            return Color(red: 1.0, green: 0.65, blue: 0.2).opacity(0.2)
-        default:
-            return Color(red: 1.0, green: 0.35, blue: 0.35).opacity(0.2)
-        }
-    }
-
-    private var badgeTextColor: Color {
-        switch label {
-        case "우수", "최상 컨디션", "양호", "적정", "Balanced":
-            return Color(red: 0.3, green: 0.85, blue: 0.45)
-        case "주의", "보통":
-            return Color(red: 1.0, green: 0.65, blue: 0.2)
-        default:
-            return Color(red: 1.0, green: 0.35, blue: 0.35)
-        }
-    }
-}
-
-// MARK: - Card Container
-
-struct CardView<Content: View>: View {
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        content
-            .padding(10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(DS.cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
-            )
-    }
-}
+// StatusBadge and CardView moved to Shared/Views/SharedComponents.swift

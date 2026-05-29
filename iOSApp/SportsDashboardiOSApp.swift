@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 @main
-struct SportsDashboardApp: App {
+struct SportsDashboardiOSApp: App {
 
     init() {
         SyncManager.shared.activate()
@@ -10,8 +10,7 @@ struct SportsDashboardApp: App {
 
     var body: some Scene {
         WindowGroup {
-            DashboardView()
-                .preferredColorScheme(.light)
+            iOSDashboardView()
                 .onAppear { setupSyncReceiver() }
         }
         .modelContainer(for: [
@@ -24,7 +23,6 @@ struct SportsDashboardApp: App {
 
     private func setupSyncReceiver() {
         SyncManager.shared.onSettingsReceived = { data in
-            // Apply received settings from iPhone
             let container = try? ModelContainer(for: UserProfile.self)
             guard let context = container?.mainContext else { return }
             let descriptor = FetchDescriptor<UserProfile>()

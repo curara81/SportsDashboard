@@ -23,6 +23,22 @@ final class DashboardViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
 
+    // Phase 3
+    @Published var vo2max: Double?
+    @Published var trainingStatus: MetricsEngine.TrainingStatus = .noStatus
+    @Published var recoveryTime: (hours: Int, label: String)?
+    @Published var fitnessAge: Int?
+    @Published var sleepCore: Double?
+    @Published var sleepDeep: Double?
+    @Published var sleepREM: Double?
+    @Published var sleepAwake: Double?
+    @Published var runningPower: Double?
+    @Published var cadence: Double?
+    @Published var groundContactTime: Double?
+    @Published var verticalOscillation: Double?
+    @Published var strideLength: Double?
+    @Published var loadFocus: MetricsEngine.LoadFocus?
+
     func authorize() async {
         do {
             try await hk.requestAuthorization()
@@ -43,11 +59,15 @@ final class DashboardViewModel: ObservableObject {
             async let hrvTask = hk.fetchHRV(daysBack: 21)
             async let rhrTask = hk.fetchRestingHeartRate(daysBack: 7)
             async let bodyTask = hk.fetchBodyComposition(daysBack: 90)
+            async let vo2Task = hk.fetchVO2max(daysBack: 90)
+            async let sleepStagesTask = hk.fetchSleepStages()
 
             let sleep = try await sleepTask
             let hrvValues = try await hrvTask
             let rhrValues = try await rhrTask
             _ = try await bodyTask
+            let vo2Values = try await vo2Task
+            let stages = try await sleepStagesTask
 
             self.sleepHours = sleep
             self.latestHRV = hrvValues.last?.value
@@ -55,6 +75,11 @@ final class DashboardViewModel: ObservableObject {
             self.bodyMass = hk.bodyMass
             self.bodyFatPercentage = hk.bodyFatPercentage
             self.leanBodyMass = hk.computedLeanBodyMass
+            self.vo2max = vo2Values.last?.value
+            self.sleepCore = stages.core
+            self.sleepDeep = stages.deep
+            self.sleepREM = stages.rem
+            self.sleepAwake = stages.awake
 
             let status = MetricsEngine.evaluateHRVStatus(values: hrvValues)
             self.hrvStatus = status
@@ -75,6 +100,27 @@ final class DashboardViewModel: ObservableObject {
 
             await processWorkouts(context: context)
 
+            // Training Status
+            self.trainingStatus = MetricsEngine.evaluateTrainingStatus(
+                loads: recentLoads, currentVO2max: vo2max
+            )
+
+            // Recovery Time
+            if let lastWorkout = recentLoads.filter({ $0.trimp > 0 }).last {
+                self.recoveryTime = MetricsEngine.estimateRecoveryTime(
+                    lastTrimp: lastWorkout.trimp,
+                    currentTSB: lastWorkout.tsb,
+                    hrvStatus: hrvStatus
+                )
+            }
+
+            // Fitness Age
+            if let v = vo2max, let profile = userProfile {
+                self.fitnessAge = MetricsEngine.fitnessAge(
+                    vo2max: v, actualAge: profile.age, isMale: profile.isMale
+                )
+            }
+
         } catch {
             errorMessage = "데이터 로드 실패: \(error.localizedDescription)"
         }
@@ -94,8 +140,21 @@ final class DashboardViewModel: ObservableObject {
         self.bodyFatPercentage = 15.8
         self.leanBodyMass = 61.0
 
+        // Phase 3: new mock data
+        self.vo2max = 48.5
+        self.sleepCore = 3.1
+        self.sleepDeep = 1.4
+        self.sleepREM = 1.8
+        self.sleepAwake = 0.9
+        self.runningPower = 285
+        self.cadence = 176
+        self.groundContactTime = 235
+        self.verticalOscillation = 8.2
+        self.strideLength = 1.15
+
         let profile = UserProfile()
         profile.restingHR = 52
+        profile.birthYear = 1990
         self.userProfile = profile
 
         let now = Date()
@@ -165,6 +224,26 @@ final class DashboardViewModel: ObservableObject {
             self.acwr = chronicE > 0 ? acuteE / chronicE : 0
             self.acwrLabel = MetricsEngine.acwrZone(self.acwr)
         }
+
+        // Phase 3: Training Status
+        self.trainingStatus = MetricsEngine.evaluateTrainingStatus(loads: loads, currentVO2max: 48.5)
+
+        // Recovery Time
+        if let lastWorkout = loads.filter({ $0.trimp > 0 }).last {
+            self.recoveryTime = MetricsEngine.estimateRecoveryTime(
+                lastTrimp: lastWorkout.trimp,
+                currentTSB: lastWorkout.tsb,
+                hrvStatus: hrvStatus
+            )
+        }
+
+        // Fitness Age
+        self.fitnessAge = MetricsEngine.fitnessAge(vo2max: 48.5, actualAge: profile.age, isMale: true)
+
+        // Load Focus (mock: 80/20 polarized)
+        self.loadFocus = MetricsEngine.LoadFocus(
+            lowAerobic: 62, highAerobic: 25, anaerobic: 13, dominantType: "저강도 유산소"
+        )
     }
     #endif
 

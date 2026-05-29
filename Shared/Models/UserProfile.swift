@@ -7,9 +7,17 @@ final class UserProfile {
     var restingHR: Double
     var isMale: Bool
     var birthYear: Int
-    var vt1HeartRate: Double?
-    var vt2HeartRate: Double?
+    var vt1Percentage: Double
+    var vt2Percentage: Double
     var targetSleepHours: Double
+
+    var manualMaxHR: Double? {
+        get { maxHR > 0 ? maxHR : nil }
+        set { maxHR = newValue ?? 0 }
+    }
+
+    var vt1HeartRate: Double { effectiveMaxHR * vt1Percentage }
+    var vt2HeartRate: Double { effectiveMaxHR * vt2Percentage }
 
     var age: Int {
         Calendar.current.component(.year, from: Date()) - birthYear
@@ -42,11 +50,14 @@ final class UserProfile {
     }
 
     init(maxHR: Double = 0, restingHR: Double = 60, isMale: Bool = true,
-         birthYear: Int = 1990, targetSleepHours: Double = 8.0) {
+         birthYear: Int = 1990, targetSleepHours: Double = 8.0,
+         vt1Percentage: Double = 0.75, vt2Percentage: Double = 0.88) {
         self.maxHR = maxHR
         self.restingHR = restingHR
         self.isMale = isMale
         self.birthYear = birthYear
         self.targetSleepHours = targetSleepHours
+        self.vt1Percentage = vt1Percentage
+        self.vt2Percentage = vt2Percentage
     }
 }

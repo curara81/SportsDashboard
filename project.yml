@@ -11,6 +11,40 @@ settings:
     SWIFT_VERSION: "5.9"
 
 targets:
+  SportsDashboard:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: iOSApp
+        type: group
+      - path: Shared
+        type: group
+      - path: WatchApp/Views/RacePredictionView.swift
+      - path: WatchApp/Views/TrainingHistoryView.swift
+      - path: WatchApp/Views/WorkoutRouteView.swift
+      - path: WatchApp/Views/HRZonesView.swift
+      - path: WatchApp/Views/WeeklyTrendView.swift
+      - path: WatchApp/Views/RunningDynamicsView.swift
+      - path: WatchApp/ViewModels/DashboardViewModel.swift
+    settings:
+      base:
+        INFOPLIST_FILE: iOSApp/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.curara.SportsDashboard
+        PRODUCT_NAME: SportsDashboard
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: false
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: P469A874Y6
+        TARGETED_DEVICE_FAMILY: "1"
+    dependencies:
+      - sdk: HealthKit.framework
+      - sdk: SwiftData.framework
+      - sdk: Charts.framework
+      - sdk: MapKit.framework
+      - sdk: CoreLocation.framework
+      - sdk: WatchConnectivity.framework
+
   SportsDashboard Watch App:
     type: application
     platform: watchOS
@@ -35,9 +69,13 @@ targets:
         SKIP_INSTALL: false
         INSTALL_PATH: "$(LOCAL_APPS_DIR)"
         CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: P469A874Y6
     entitlements:
       path: WatchApp/SportsDashboard.entitlements
     dependencies:
       - sdk: HealthKit.framework
       - sdk: SwiftData.framework
       - sdk: Charts.framework
+      - sdk: MapKit.framework
+      - sdk: CoreLocation.framework
+      - sdk: WatchConnectivity.framework

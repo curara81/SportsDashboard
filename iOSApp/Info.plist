@@ -18,13 +18,11 @@
 	<string>수면, 심박수, HRV, 체성분, 운동 데이터를 분석하여 훈련 준비도와 회복 상태를 표시합니다.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>운동 기록을 저장합니다.</string>
-	<key>WKBackgroundModes</key>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UISupportedInterfaceOrientations</key>
 	<array>
-		<string>workout-processing</string>
+		<string>UIInterfaceOrientationPortrait</string>
 	</array>
-	<key>WKApplication</key>
-	<true/>
-	<key>WKWatchOnly</key>
-	<true/>
 </dict>
 </plist>

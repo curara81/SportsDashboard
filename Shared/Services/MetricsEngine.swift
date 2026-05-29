@@ -325,4 +325,269 @@ struct MetricsEngine {
         guard avgFirst > 0 else { return nil }
         return ((avgSecond - avgFirst) / avgFirst) * 100
     }
+
+    // MARK: - Training Status (Garmin-style 8 levels)
+
+    enum TrainingStatus: String {
+        case peaking = "피킹"
+        case productive = "생산적"
+        case maintaining = "유지"
+        case recovery = "회복"
+        case unproductive = "비생산적"
+        case detraining = "디트레이닝"
+        case overreaching = "과부하"
+        case strained = "과훈련"
+        case noStatus = "데이터 부족"
+
+        var icon: String {
+            switch self {
+            case .peaking: return "flame.fill"
+            case .productive: return "arrow.up.right"
+            case .maintaining: return "equal"
+            case .recovery: return "bed.double.fill"
+            case .unproductive: return "arrow.down.right"
+            case .detraining: return "arrow.down"
+            case .overreaching: return "exclamationmark.triangle"
+            case .strained: return "xmark.octagon"
+            case .noStatus: return "questionmark"
+            }
+        }
+    }
+
+    /// Determine training status based on CTL trend, TSB, and recent load pattern
+    static func evaluateTrainingStatus(
+        loads: [DailyTrainingLoad],
+        currentVO2max: Double? = nil,
+        previousVO2max: Double? = nil
+    ) -> TrainingStatus {
+        guard loads.count >= 14 else { return .noStatus }
+
+        let recent7 = Array(loads.suffix(7))
+        let previous7 = loads.count >= 14 ? Array(loads.suffix(14).prefix(7)) : []
+
+        let recentCTL = recent7.last?.ctl ?? 0
+        let previousCTL = previous7.last?.ctl ?? 0
+        let ctlTrend = recentCTL - previousCTL
+        let currentTSB = recent7.last?.tsb ?? 0
+
+        let recentAvgLoad = recent7.map(\.trimp).reduce(0, +) / 7.0
+        let previousAvgLoad = previous7.isEmpty ? recentAvgLoad : previous7.map(\.trimp).reduce(0, +) / 7.0
+
+        let vo2improving = (currentVO2max ?? 0) > (previousVO2max ?? 0)
+
+        // Strained: very negative TSB + high load
+        if currentTSB < -30 && recentAvgLoad > previousAvgLoad * 1.3 {
+            return .strained
+        }
+
+        // Overreaching: negative TSB + increasing load but no fitness gain
+        if currentTSB < -20 && ctlTrend > 2 && !vo2improving {
+            return .overreaching
+        }
+
+        // Peaking: positive TSB + high CTL (taper phase)
+        if currentTSB > 5 && recentCTL > 40 && recentAvgLoad < previousAvgLoad {
+            return .peaking
+        }
+
+        // Recovery: very positive TSB, reduced load
+        if currentTSB > 10 && recentAvgLoad < previousAvgLoad * 0.5 {
+            return .recovery
+        }
+
+        // Detraining: CTL dropping significantly
+        if ctlTrend < -5 && recentAvgLoad < 20 {
+            return .detraining
+        }
+
+        // Productive: CTL increasing + manageable TSB
+        if ctlTrend > 1 && currentTSB > -25 {
+            return .productive
+        }
+
+        // Unproductive: load present but CTL not increasing
+        if recentAvgLoad > 30 && ctlTrend <= 0 {
+            return .unproductive
+        }
+
+        // Maintaining: stable CTL
+        return .maintaining
+    }
+
+    // MARK: - Recovery Time (hours)
+
+    static func estimateRecoveryTime(
+        lastTrimp: Double,
+        currentTSB: Double,
+        hrvStatus: HRVStatus?
+    ) -> (hours: Int, label: String) {
+        // Base recovery from workout intensity
+        let baseHours: Double
+        switch lastTrimp {
+        case 200...: baseHours = 72
+        case 150..<200: baseHours = 48
+        case 100..<150: baseHours = 36
+        case 60..<100: baseHours = 24
+        case 30..<60: baseHours = 18
+        default: baseHours = 12
+        }
+
+        // Adjust for fatigue (TSB)
+        let fatigueMultiplier: Double
+        if currentTSB < -20 { fatigueMultiplier = 1.5 }
+        else if currentTSB < -10 { fatigueMultiplier = 1.25 }
+        else if currentTSB > 10 { fatigueMultiplier = 0.75 }
+        else { fatigueMultiplier = 1.0 }
+
+        // Adjust for HRV status
+        let hrvMultiplier: Double
+        if let status = hrvStatus?.status {
+            switch status {
+            case .unbalancedLow: hrvMultiplier = 1.3
+            case .unbalancedHigh: hrvMultiplier = 0.85
+            case .balanced: hrvMultiplier = 1.0
+            case .insufficientData: hrvMultiplier = 1.0
+            }
+        } else {
+            hrvMultiplier = 1.0
+        }
+
+        let totalHours = Int(baseHours * fatigueMultiplier * hrvMultiplier)
+
+        let label: String
+        switch totalHours {
+        case 0..<18: label = "가벼운 회복"
+        case 18..<36: label = "하루 회복"
+        case 36..<60: label = "충분한 휴식"
+        default: label = "장기 회복 필요"
+        }
+
+        return (totalHours, label)
+    }
+
+    // MARK: - Fitness Age (from VO2max)
+
+    static func fitnessAge(vo2max: Double, actualAge: Int, isMale: Bool) -> Int {
+        // Normative VO2max values by age (mean values)
+        // Based on ACSM percentile data
+        let maleNorms: [(age: Int, vo2max: Double)] = [
+            (20, 47.0), (25, 45.5), (30, 44.0), (35, 42.5),
+            (40, 41.0), (45, 39.0), (50, 37.0), (55, 35.0),
+            (60, 33.0), (65, 31.0), (70, 28.5), (75, 26.0)
+        ]
+        let femaleNorms: [(age: Int, vo2max: Double)] = [
+            (20, 40.0), (25, 38.5), (30, 37.0), (35, 35.5),
+            (40, 34.0), (45, 32.0), (50, 30.0), (55, 28.0),
+            (60, 26.0), (65, 24.0), (70, 22.0), (75, 20.5)
+        ]
+
+        let norms = isMale ? maleNorms : femaleNorms
+
+        // Find which age bracket the VO2max corresponds to
+        for i in 0..<(norms.count - 1) {
+            if vo2max >= norms[i].vo2max {
+                return norms[i].age
+            }
+            if vo2max >= norms[i + 1].vo2max && vo2max < norms[i].vo2max {
+                let fraction = (vo2max - norms[i + 1].vo2max) / (norms[i].vo2max - norms[i + 1].vo2max)
+                return Int(Double(norms[i + 1].age) - fraction * Double(norms[i + 1].age - norms[i].age))
+            }
+        }
+
+        return min(actualAge + 10, 80)
+    }
+
+    // MARK: - Training Load Focus (Aerobic/Anaerobic distribution)
+
+    struct LoadFocus {
+        let lowAerobic: Double    // % time below VT1
+        let highAerobic: Double   // % time VT1-VT2
+        let anaerobic: Double     // % time above VT2
+        let dominantType: String
+    }
+
+    static func calculateLoadFocus(
+        hrSamples: [DatedValue],
+        vt1HR: Double,
+        vt2HR: Double
+    ) -> LoadFocus {
+        guard hrSamples.count >= 2 else {
+            return LoadFocus(lowAerobic: 0, highAerobic: 0, anaerobic: 0, dominantType: "데이터 없음")
+        }
+
+        var lowTime = 0.0
+        var highTime = 0.0
+        var anaerobicTime = 0.0
+
+        for i in 0..<(hrSamples.count - 1) {
+            let hr = hrSamples[i].value
+            let dt = hrSamples[i + 1].date.timeIntervalSince(hrSamples[i].date) / 60.0
+            guard dt > 0 && dt < 5 else { continue }
+
+            if hr >= vt2HR { anaerobicTime += dt }
+            else if hr >= vt1HR { highTime += dt }
+            else { lowTime += dt }
+        }
+
+        let total = lowTime + highTime + anaerobicTime
+        guard total > 0 else {
+            return LoadFocus(lowAerobic: 0, highAerobic: 0, anaerobic: 0, dominantType: "데이터 없음")
+        }
+
+        let lowPct = lowTime / total * 100
+        let highPct = highTime / total * 100
+        let anaerobicPct = anaerobicTime / total * 100
+
+        let dominant: String
+        if anaerobicPct > 40 { dominant = "무산소" }
+        else if highPct > 40 { dominant = "고강도 유산소" }
+        else { dominant = "저강도 유산소" }
+
+        return LoadFocus(lowAerobic: lowPct, highAerobic: highPct, anaerobic: anaerobicPct, dominantType: dominant)
+    }
+
+    // MARK: - Running Dynamics Evaluation
+
+    struct RunningDynamicsEval {
+        let cadence: (value: Double, rating: String)?
+        let groundContactTime: (value: Double, rating: String)?
+        let verticalOscillation: (value: Double, rating: String)?
+        let strideLength: (value: Double, rating: String)?
+
+        static func rateCadence(_ spm: Double) -> String {
+            switch spm {
+            case 180...: return "우수"
+            case 170..<180: return "양호"
+            case 160..<170: return "보통"
+            default: return "개선 필요"
+            }
+        }
+
+        static func rateGCT(_ ms: Double) -> String {
+            switch ms {
+            case 0..<208: return "우수"
+            case 208..<240: return "양호"
+            case 240..<273: return "보통"
+            default: return "개선 필요"
+            }
+        }
+
+        static func rateVO(_ cm: Double) -> String {
+            switch cm {
+            case 0..<6.7: return "우수"
+            case 6.7..<8.4: return "양호"
+            case 8.4..<10.1: return "보통"
+            default: return "개선 필요"
+            }
+        }
+
+        static func rateStride(_ m: Double) -> String {
+            switch m {
+            case 1.2...: return "우수"
+            case 1.0..<1.2: return "양호"
+            case 0.8..<1.0: return "보통"
+            default: return "짧음"
+            }
+        }
+    }
 }

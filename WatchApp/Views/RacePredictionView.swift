@@ -1,0 +1,191 @@
+import SwiftUI
+
+struct RacePredictionView: View {
+    @State private var recentDistance: Double = 5.0
+    @State private var recentMinutes: Int = 25
+    @State private var recentSeconds: Int = 0
+
+    private let distances: [(name: String, km: Double)] = [
+        ("5K", 5.0), ("10K", 10.0), ("하프", 21.0975), ("풀", 42.195)
+    ]
+
+    private var baseTime: TimeInterval {
+        Double(recentMinutes * 60 + recentSeconds)
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("레이스 예측")
+                    .font(.system(size: 17, weight: .bold))
+
+                inputCard
+                resultCards
+                paceCard
+            }
+            .padding(.horizontal, 6)
+        }
+    }
+
+    private var inputCard: some View {
+        CardView {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("기준 기록", systemImage: "figure.run")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color(white: 0.55))
+
+                HStack {
+                    Text("거리")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color(white: 0.55))
+                    Spacer()
+                    Picker("", selection: $recentDistance) {
+                        ForEach(distances, id: \.km) { d in
+                            Text(d.name).tag(d.km)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                    .frame(height: 40)
+                }
+
+                HStack {
+                    Text("기록")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color(white: 0.55))
+                    Spacer()
+                    HStack(spacing: 2) {
+                        Picker("", selection: $recentMinutes) {
+                            ForEach(10..<300) { m in
+                                Text("\(m)").tag(m)
+                            }
+                        }
+                        .frame(width: 45, height: 40)
+                        Text(":")
+                            .font(.system(size: 14, weight: .bold))
+                        Picker("", selection: $recentSeconds) {
+                            ForEach(0..<60) { s in
+                                Text(String(format: "%02d", s)).tag(s)
+                            }
+                        }
+                        .frame(width: 45, height: 40)
+                    }
+                }
+            }
+        }
+    }
+
+    private var resultCards: some View {
+        ForEach(distances, id: \.km) { target in
+            let predicted = MetricsEngine.predictRaceTime(
+                knownDistance: recentDistance * 1000,
+                knownTime: baseTime,
+                targetDistance: target.km * 1000
+            )
+            let isSame = abs(target.km - recentDistance) < 0.01
+
+            if isSame {
+                CardView {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(target.name)
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(Color(white: 0.55))
+                            Text("\(target.km, specifier: "%.1f") km")
+                                .font(.system(size: 9))
+                                .foregroundStyle(Color(white: 0.55))
+                        }
+                        Spacer()
+                        Text(formatTime(baseTime))
+                            .font(.system(size: 16, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color(white: 0.55))
+                        Text("기준")
+                            .font(.system(size: 9))
+                            .foregroundStyle(Color(white: 0.4))
+                    }
+                }
+            } else {
+                NavigationLink {
+                    PaceWorkoutView(
+                        targetDistance: target.name,
+                        targetDistanceKm: target.km,
+                        targetTimeSeconds: predicted
+                    )
+                } label: {
+                    CardView {
+                        VStack(spacing: 6) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(target.name)
+                                        .font(.system(size: 14, weight: .bold))
+                                    Text("\(target.km, specifier: "%.1f") km")
+                                        .font(.system(size: 9))
+                                        .foregroundStyle(Color(white: 0.55))
+                                }
+                                Spacer()
+                                Text(formatTime(predicted))
+                                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                    .foregroundStyle(Color(red: 0.3, green: 0.85, blue: 0.45))
+                            }
+                            HStack {
+                                Image(systemName: "figure.run")
+                                    .font(.system(size: 9))
+                                Text("이 페이스로 달리기")
+                                    .font(.system(size: 10, weight: .medium))
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 8))
+                            }
+                            .foregroundStyle(Color(red: 0.35, green: 0.65, blue: 1.0))
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private var paceCard: some View {
+        CardView {
+            VStack(alignment: .leading, spacing: 6) {
+                Label("예측 페이스", systemImage: "speedometer")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color(white: 0.55))
+
+                ForEach(distances, id: \.km) { target in
+                    let predicted = MetricsEngine.predictRaceTime(
+                        knownDistance: recentDistance * 1000,
+                        knownTime: baseTime,
+                        targetDistance: target.km * 1000
+                    )
+                    let pacePerKm = predicted / target.km
+
+                    HStack {
+                        Text(target.name)
+                            .font(.system(size: 11))
+                            .frame(width: 30, alignment: .leading)
+                        Spacer()
+                        Text(formatPace(pacePerKm) + " /km")
+                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(Color(red: 0.35, green: 0.65, blue: 1.0))
+                    }
+                }
+            }
+        }
+    }
+
+    private func formatTime(_ seconds: TimeInterval) -> String {
+        let h = Int(seconds) / 3600
+        let m = (Int(seconds) % 3600) / 60
+        let s = Int(seconds) % 60
+        if h > 0 {
+            return String(format: "%d:%02d:%02d", h, m, s)
+        }
+        return String(format: "%d:%02d", m, s)
+    }
+
+    private func formatPace(_ secondsPerKm: Double) -> String {
+        let m = Int(secondsPerKm) / 60
+        let s = Int(secondsPerKm) % 60
+        return String(format: "%d:%02d", m, s)
+    }
+}

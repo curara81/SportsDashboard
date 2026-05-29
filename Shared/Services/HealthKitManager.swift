@@ -1,5 +1,6 @@
 import Foundation
 import HealthKit
+import CoreLocation
 
 @MainActor
 final class HealthKitManager: ObservableObject {
@@ -19,6 +20,23 @@ final class HealthKitManager: ObservableObject {
     @Published var recentBodyMassValues: [DatedValue] = []
     @Published var recentBodyFatValues: [DatedValue] = []
 
+    // Phase 3: new metrics
+    @Published var vo2max: Double?
+    @Published var recentVO2maxValues: [DatedValue] = []
+
+    // Sleep stages
+    @Published var sleepCore: Double?
+    @Published var sleepDeep: Double?
+    @Published var sleepREM: Double?
+    @Published var sleepAwake: Double?
+
+    // Running dynamics
+    @Published var lastRunningPower: Double?
+    @Published var lastCadence: Double?
+    @Published var lastGCT: Double?           // ground contact time ms
+    @Published var lastVerticalOsc: Double?    // vertical oscillation cm
+    @Published var lastStrideLength: Double?   // meters
+
     // MARK: - Authorization
 
     private var readTypes: Set<HKObjectType> {
@@ -26,7 +44,8 @@ final class HealthKitManager: ObservableObject {
         let identifiers: [HKQuantityTypeIdentifier] = [
             .restingHeartRate, .heartRateVariabilitySDNN, .heartRate,
             .vo2Max, .bodyMass, .bodyFatPercentage, .leanBodyMass,
-            .distanceWalkingRunning, .activeEnergyBurned, .runningSpeed
+            .distanceWalkingRunning, .activeEnergyBurned, .runningSpeed,
+            .stepCount
         ]
         for id in identifiers {
             if let t = HKQuantityType.quantityType(forIdentifier: id) { types.insert(t) }
@@ -39,6 +58,9 @@ final class HealthKitManager: ObservableObject {
 
     func requestAuthorization() async throws {
         guard HKHealthStore.isHealthDataAvailable() else { return }
+        // Note: HKWorkoutSession handles its own write authorization.
+        // Share types omitted to avoid NSException from purpose string validation
+        // on certain simulator/OS versions.
         try await store.requestAuthorization(toShare: [], read: readTypes)
     }
 
@@ -156,6 +178,135 @@ final class HealthKitManager: ObservableObject {
         let samples = try await queryQuantitySamples(type: hrType, predicate: predicate)
         return samples.map {
             DatedValue(date: $0.startDate, value: $0.quantity.doubleValue(for: .count().unitDivided(by: .minute())))
+        }
+    }
+
+    // MARK: - VO2max
+
+    func fetchVO2max(daysBack: Int = 90) async throws -> [DatedValue] {
+        let vo2Type = HKQuantityType(.vo2Max)
+        let unit = HKUnit(from: "ml/kg*min")
+        let values = try await fetchDatedValues(type: vo2Type, unit: unit, daysBack: daysBack)
+        self.recentVO2maxValues = values
+        self.vo2max = values.last?.value
+        return values
+    }
+
+    // MARK: - Sleep Stages
+
+    func fetchSleepStages() async throws -> (core: Double, deep: Double, rem: Double, awake: Double) {
+        let sleepType = HKCategoryType(.sleepAnalysis)
+        let calendar = Calendar.current
+        let now = Date()
+        let sixPMYesterday = calendar.date(
+            bySettingHour: 18, minute: 0, second: 0,
+            of: calendar.date(byAdding: .day, value: -1, to: now)!
+        )!
+        let predicate = HKQuery.predicateForSamples(
+            withStart: sixPMYesterday, end: now, options: .strictStartDate
+        )
+
+        let samples = try await queryCategorySamples(type: sleepType, predicate: predicate)
+
+        var core = 0.0, deep = 0.0, rem = 0.0, awake = 0.0
+
+        for sample in samples {
+            let duration = sample.endDate.timeIntervalSince(sample.startDate) / 3600.0
+            switch sample.value {
+            case HKCategoryValueSleepAnalysis.asleepCore.rawValue:
+                core += duration
+            case HKCategoryValueSleepAnalysis.asleepDeep.rawValue:
+                deep += duration
+            case HKCategoryValueSleepAnalysis.asleepREM.rawValue:
+                rem += duration
+            case HKCategoryValueSleepAnalysis.awake.rawValue:
+                awake += duration
+            default:
+                break
+            }
+        }
+
+        self.sleepCore = core
+        self.sleepDeep = deep
+        self.sleepREM = rem
+        self.sleepAwake = awake
+
+        return (core, deep, rem, awake)
+    }
+
+    // MARK: - Running Dynamics (for a specific workout)
+
+    func fetchRunningDynamics(for workout: HKWorkout) async throws {
+        let predicate = HKQuery.predicateForSamples(
+            withStart: workout.startDate, end: workout.endDate, options: .strictStartDate
+        )
+
+        // Running Power
+        if let powerSamples = try? await queryQuantitySamples(
+            type: HKQuantityType(.runningPower), predicate: predicate
+        ), !powerSamples.isEmpty {
+            let avg = powerSamples.map { $0.quantity.doubleValue(for: .watt()) }.reduce(0, +) / Double(powerSamples.count)
+            self.lastRunningPower = avg
+        }
+
+        // Ground Contact Time
+        if let gctSamples = try? await queryQuantitySamples(
+            type: HKQuantityType(.runningGroundContactTime), predicate: predicate
+        ), !gctSamples.isEmpty {
+            let avg = gctSamples.map { $0.quantity.doubleValue(for: .secondUnit(with: .milli)) }.reduce(0, +) / Double(gctSamples.count)
+            self.lastGCT = avg
+        }
+
+        // Vertical Oscillation
+        if let voSamples = try? await queryQuantitySamples(
+            type: HKQuantityType(.runningVerticalOscillation), predicate: predicate
+        ), !voSamples.isEmpty {
+            let unit = HKUnit.meterUnit(with: .centi)
+            let avg = voSamples.map { $0.quantity.doubleValue(for: unit) }.reduce(0, +) / Double(voSamples.count)
+            self.lastVerticalOsc = avg
+        }
+
+        // Stride Length
+        if let slSamples = try? await queryQuantitySamples(
+            type: HKQuantityType(.runningStrideLength), predicate: predicate
+        ), !slSamples.isEmpty {
+            let avg = slSamples.map { $0.quantity.doubleValue(for: .meter()) }.reduce(0, +) / Double(slSamples.count)
+            self.lastStrideLength = avg
+        }
+    }
+
+    // MARK: - Workout Route (GPS)
+
+    func fetchWorkoutRoute(for workout: HKWorkout) async throws -> [CLLocation] {
+        let routeType = HKSeriesType.workoutRoute()
+        let predicate = HKQuery.predicateForObjects(from: workout)
+
+        let routes: [HKWorkoutRoute] = try await withCheckedThrowingContinuation { cont in
+            let query = HKSampleQuery(
+                sampleType: routeType,
+                predicate: predicate,
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: nil
+            ) { _, results, error in
+                if let error { cont.resume(throwing: error); return }
+                cont.resume(returning: results as? [HKWorkoutRoute] ?? [])
+            }
+            store.execute(query)
+        }
+
+        guard let route = routes.first else { return [] }
+
+        return try await withCheckedThrowingContinuation { cont in
+            var allLocations: [CLLocation] = []
+            let routeQuery = HKWorkoutRouteQuery(route: route) { _, locations, done, error in
+                if let error {
+                    cont.resume(throwing: error)
+                    return
+                }
+                if let locations { allLocations.append(contentsOf: locations) }
+                if done { cont.resume(returning: allLocations) }
+            }
+            store.execute(routeQuery)
         }
     }
 
