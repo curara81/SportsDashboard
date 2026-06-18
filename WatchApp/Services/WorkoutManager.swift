@@ -44,6 +44,8 @@ final class WorkoutManager: NSObject, ObservableObject {
     @Published var totalAscent: Double = 0         // meters climbed
     @Published var totalDescent: Double = 0        // meters descended
     @Published var currentAltitude: Double = 0     // meters
+    @Published var currentGrade: Double = 0        // slope, decimal (0.05 = 5%)
+    @Published var gradeAdjustedPace: Double = 0   // GAP, seconds per km
     @Published var gpsAccuracy: CLLocationAccuracy = -1  // <0 = no fix yet
     @Published var hasGPSFix = false
     @Published var routePointCount = 0
@@ -163,6 +165,7 @@ final class WorkoutManager: NSObject, ObservableObject {
     private var lastHapticTime: Date = .distantPast
     private var hrSamples: [Double] = []
     private var lastAltitude: Double?           // for ascent/descent delta
+    private var lastGradeLocation: CLLocation?  // for grade (GAP) computation
     private var usesGPS = false                 // outdoor sports only
 
     private let hapticCooldown: TimeInterval = 10
@@ -537,6 +540,10 @@ final class WorkoutManager: NSObject, ObservableObject {
             } else {
                 currentPace = averagePace
             }
+
+            // Grade-adjusted pace (flat-equivalent) via Minetti running energy cost.
+            let r = Self.minettiCost(currentGrade) / Self.minettiCost(0)
+            gradeAdjustedPace = (r > 0 && currentPace > 0) ? currentPace / r : currentPace
         }
 
         // Average HR
@@ -591,6 +598,14 @@ final class WorkoutManager: NSObject, ObservableObject {
         }
     }
 
+    /// Minetti et al. (2002) metabolic cost of running per unit distance (J/kg/m)
+    /// as a function of gradient i (decimal). Used to grade-adjust pace.
+    static func minettiCost(_ i: Double) -> Double {
+        let x = min(max(i, -0.45), 0.45)
+        return 155.4 * pow(x, 5) - 30.4 * pow(x, 4) - 43.3 * pow(x, 3)
+            + 46.3 * pow(x, 2) + 19.5 * x + 3.6
+    }
+
     // MARK: - Reset
 
     func reset() {
@@ -612,6 +627,9 @@ final class WorkoutManager: NSObject, ObservableObject {
         totalAscent = 0
         totalDescent = 0
         currentAltitude = 0
+        currentGrade = 0
+        gradeAdjustedPace = 0
+        lastGradeLocation = nil
         gpsAccuracy = -1
         hasGPSFix = false
         routePointCount = 0
@@ -680,6 +698,16 @@ extension WorkoutManager: CLLocationManagerDelegate {
                 }
                 self.lastAltitude = alt
                 self.currentAltitude = alt
+
+                // Live grade (slope) for grade-adjusted pace — EMA-smoothed.
+                if let prev = self.lastGradeLocation {
+                    let h = loc.distance(from: prev)
+                    if h > 2 {
+                        let g = min(max((loc.altitude - prev.altitude) / h, -0.45), 0.45)
+                        self.currentGrade = self.currentGrade * 0.7 + g * 0.3
+                    }
+                }
+                self.lastGradeLocation = loc
             }
             if let latest = good.last {
                 self.gpsAccuracy = latest.horizontalAccuracy

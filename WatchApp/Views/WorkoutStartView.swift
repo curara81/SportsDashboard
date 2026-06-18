@@ -189,6 +189,9 @@ struct ActiveWorkoutView: View {
                 dynamicsPage.tag(3)
             }
             elevationPage.tag(4)
+            if manager.workoutType.usePace {
+                projectionPage.tag(9)   // live finish-time projection
+            }
             metricsPage.tag(5)      // full details (existing rich scroll page)
             mapPage.tag(6)
             controlsPage.tag(7)
@@ -293,6 +296,10 @@ struct ActiveWorkoutView: View {
                     }
                     miniMetric("속도", manager.currentSpeed > 0 ? String(format: "%.1f", manager.currentSpeed * 3.6) : "--", sportColor)
                 }
+                HStack(spacing: 16) {
+                    miniMetric("GAP", manager.gradeAdjustedPace > 0 ? formatPace(manager.gradeAdjustedPace) : "--:--", Color(red: 1, green: 0.6, blue: 0.2))
+                    miniMetric("경사", String(format: "%+.0f%%", manager.currentGrade * 100), .white)
+                }
             } else {
                 bigField("속도", manager.currentSpeed > 0 ? String(format: "%.1f", manager.currentSpeed * 3.6) : "--", "km/h", color: sportColor)
                 miniMetric("평균", manager.averageSpeed > 0 ? String(format: "%.1f km/h", manager.averageSpeed * 3.6) : "--", .white)
@@ -377,6 +384,40 @@ struct ActiveWorkoutView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Live finish-time projection for standard distances from current average pace.
+    private var projectionPage: some View {
+        let p = manager.averagePace   // seconds per km
+        return VStack(spacing: 8) {
+            Text("예상 완주")
+                .font(.system(size: 13, weight: .semibold)).textCase(.uppercase)
+                .foregroundStyle(Color(white: 0.55))
+            if p > 0 {
+                projRow("5K", p * 5)
+                projRow("10K", p * 10)
+                projRow("하프", p * 21.0975)
+                projRow("풀", p * 42.195)
+            } else {
+                Text("페이스 측정 후 표시")
+                    .font(.system(size: 11)).foregroundStyle(Color(white: 0.5))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 14)
+    }
+
+    private func projRow(_ label: String, _ seconds: Double) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color(white: 0.6))
+                .frame(width: 44, alignment: .leading)
+            Spacer()
+            Text(formatTime(seconds))
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .monospacedDigit()
+        }
     }
 
     // MARK: - Active Status Bar (운동 중 + 큰 타이머, always shown so user KNOWS it started)
