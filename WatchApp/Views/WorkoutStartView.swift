@@ -302,7 +302,10 @@ struct ActiveWorkoutView: View {
                     Text(primaryPaceValue)
                         .font(.system(size: 24, weight: .bold, design: .rounded)).monospacedDigit()
                         .foregroundStyle(manager.isFreeMode ? .white : paceStatusColor)
-                    Text(manager.workoutType.usePace ? "/km" : "km/h").font(.system(size: 9)).foregroundStyle(Color(white: 0.5))
+                    Text(manager.workoutType.usePace
+                         ? "평균 " + (manager.averagePace > 0 ? formatPace(manager.averagePace) : "--:--")
+                         : "평균 " + (manager.averageSpeed > 0 ? String(format: "%.1f", manager.averageSpeed * 3.6) : "--"))
+                        .font(.system(size: 9)).foregroundStyle(Color(white: 0.5))
                 }
             }
             HStack(spacing: 8) {
@@ -741,25 +744,42 @@ struct ActiveWorkoutView: View {
                 .allowsHitTesting(false)
                 .ignoresSafeArea(edges: .bottom)
 
-                // Live stat strip — distance · pace/speed · time.
-                HStack(spacing: 0) {
-                    mapStatPill(String(format: "%.2f", manager.totalDistance / 1000), "km")
-                    Spacer()
-                    if manager.workoutType.usePace {
-                        mapStatPill(manager.currentPace > 0 ? formatPace(manager.currentPace) : "--:--", "/km")
-                    } else {
-                        mapStatPill(manager.currentSpeed > 0 ? String(format: "%.1f", manager.currentSpeed * 3.6) : "--", "km/h")
+                // Live stats over the map — big enough to read mid-stride.
+                VStack(spacing: 3) {
+                    HStack(spacing: 0) {
+                        mapStat("거리", String(format: "%.2f", manager.totalDistance / 1000) + "km")
+                        Spacer()
+                        mapStat("시간", formatTime(manager.elapsedSeconds))
                     }
-                    Spacer()
-                    mapStatPill(formatTime(manager.elapsedSeconds), "")
+                    HStack(spacing: 0) {
+                        if manager.workoutType.usePace {
+                            mapStat("페이스", manager.currentPace > 0 ? formatPace(manager.currentPace) : "--:--")
+                            Spacer()
+                            mapStat("평균", manager.averagePace > 0 ? formatPace(manager.averagePace) : "--:--")
+                        } else {
+                            mapStat("속도", manager.currentSpeed > 0 ? String(format: "%.1f", manager.currentSpeed * 3.6) : "--")
+                            Spacer()
+                            mapStat("평균", manager.averageSpeed > 0 ? String(format: "%.1f", manager.averageSpeed * 3.6) : "--")
+                        }
+                    }
                 }
                 .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .padding(.vertical, 7)
                 .background(.ultraThinMaterial)
-                .clipShape(Capsule())
+                .clipShape(RoundedRectangle(cornerRadius: 14))
                 .padding(.horizontal, 6)
                 .padding(.bottom, 4)
             }
+        }
+    }
+
+    private func mapStat(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(label).font(.system(size: 9)).foregroundStyle(Color(white: 0.72))
+            Text(value)
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
+                .foregroundStyle(.white)
         }
     }
 
