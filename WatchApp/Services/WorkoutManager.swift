@@ -4,6 +4,7 @@ import HealthKit
 import WatchKit
 import Combine
 import CoreLocation
+import AVFoundation
 
 @MainActor
 final class WorkoutManager: NSObject, ObservableObject {
@@ -147,6 +148,7 @@ final class WorkoutManager: NSObject, ObservableObject {
     var targetPacePerKm: Double = 0                // seconds per km (0 = free mode)
     var paceToleranceSeconds: Double = 15
     var targetCadence: Double = 180                // spm, cadence-coach target (default)
+    var voiceAnnouncementsEnabled = true           // spoken km splits
 
     var isFreeMode: Bool { targetPacePerKm <= 0 }
 
@@ -166,6 +168,7 @@ final class WorkoutManager: NSObject, ObservableObject {
     private var routeBuilder: HKWorkoutRouteBuilder?
     private let store = HKHealthStore()
     private let locationManager = CLLocationManager()
+    private let speechSynth = AVSpeechSynthesizer()
     private var timer: Timer?
     private var countdownTimer: Timer?
     private var startDate: Date?
@@ -187,6 +190,28 @@ final class WorkoutManager: NSObject, ObservableObject {
         // NOTE: allowsBackgroundLocationUpdates는 watchOS watch-only 앱에서
         // 설정 시 크래시 유발(UIBackgroundModes location 필요, WK앱엔 없음).
         // watchOS는 HKWorkoutSession이 백그라운드 위치를 자동 관리하므로 불필요.
+    }
+
+    // MARK: - Voice announcements (Korean km splits)
+
+    /// Speaks e.g. "1킬로미터. 현재 페이스 5분 30초. 평균 페이스 5분 30초."
+    private func announceKm(_ km: Int, splitPace: Double, avgPace: Double) {
+        guard voiceAnnouncementsEnabled, splitPace > 0 else { return }
+        let text = "\(km)킬로미터. 현재 페이스 \(paceKorean(splitPace)). 평균 페이스 \(paceKorean(avgPace))."
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playback, mode: .default, options: [.duckOthers])
+        try? session.setActive(true)
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = AVSpeechSynthesisVoice(language: "ko-KR")
+        utterance.rate = 0.5
+        speechSynth.speak(utterance)
+    }
+
+    private func paceKorean(_ secPerKm: Double) -> String {
+        let m = Int(secPerKm) / 60, s = Int(secPerKm) % 60
+        if m > 0 && s > 0 { return "\(m)분 \(s)초" }
+        if m > 0 { return "\(m)분" }
+        return "\(s)초"
     }
 
     private func playHaptic(_ type: Int) {
@@ -590,6 +615,7 @@ final class WorkoutManager: NSObject, ObservableObject {
                 // Auto-lap every completed km
                 recordLap(isManual: false)
                 playHaptic(3) // notification
+                announceKm(completedKm, splitPace: lastKmPace, avgPace: averagePace)
             }
 
             let kmProgress = totalDistance - (Double(currentKm) * 1000.0)
