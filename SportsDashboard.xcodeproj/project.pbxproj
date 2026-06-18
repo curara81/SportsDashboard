@@ -51,6 +51,7 @@
 		C703488F30853EBD9E859404 /* SharedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 765C9BE79B2EA317E2D06B7A /* SharedComponents.swift */; };
 		CA177B7AF665D863298A0B32 /* iOSSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06AA41D554B276327DC4E7E4 /* iOSSettingsView.swift */; };
 		CB0ADE74DDFA5883BD74EC71 /* WorkoutRouteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A69186A5CDDA914558D144C0 /* WorkoutRouteView.swift */; };
+		AA02FA11C0DE00000000FE02 /* FlyoverReplayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA01FA11C0DE00000000FE01 /* FlyoverReplayView.swift */; };
 		CE15F5826187D487184ACCAF /* SyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CED1B4A231F68A58622E095 /* SyncManager.swift */; };
 		CF38388B7996133480945200 /* RacePredictionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8EAEC2EED3E55297E5534CD /* RacePredictionView.swift */; };
 		D282AAA950143CFC83A384BF /* DailyTrainingLoad.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C287B26A201D46CE8330FC /* DailyTrainingLoad.swift */; };
@@ -92,6 +93,7 @@
 		A32E7B795D99BE831991E804 /* SwiftData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftData.framework; path = System/Library/Frameworks/SwiftData.framework; sourceTree = SDKROOT; };
 		A6340F808AB4BE5F597B0E8F /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		A69186A5CDDA914558D144C0 /* WorkoutRouteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutRouteView.swift; sourceTree = "<group>"; };
+		AA01FA11C0DE00000000FE01 /* FlyoverReplayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlyoverReplayView.swift; sourceTree = "<group>"; };
 		AA608CD14DC9C5649EF6A51D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		ADAB89F84D5E76A35622CEFD /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
 		B684ABF4E935AD58DE085304 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -174,6 +176,7 @@
 				4D95B363F8249B6ABE146E30 /* TrainingHistoryView.swift */,
 				9D351CAEF42F5FDB32BF780C /* WeeklyTrendView.swift */,
 				A69186A5CDDA914558D144C0 /* WorkoutRouteView.swift */,
+				AA01FA11C0DE00000000FE01 /* FlyoverReplayView.swift */,
 				4966895226CF417C35A58876 /* WorkoutStartView.swift */,
 			);
 			name = Views;
@@ -425,6 +428,7 @@
 				4862D5C5B0A935260C688D4E /* UserProfile.swift in Sources */,
 				340D25925C5AA31E3FED51E1 /* WeeklyTrendView.swift in Sources */,
 				CB0ADE74DDFA5883BD74EC71 /* WorkoutRouteView.swift in Sources */,
+				AA02FA11C0DE00000000FE02 /* FlyoverReplayView.swift in Sources */,
 				5C76E3D8DA847B44FF06252D /* iOSDashboardView.swift in Sources */,
 				CA177B7AF665D863298A0B32 /* iOSSettingsView.swift in Sources */,
 			);
@@ -532,6 +536,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = iOSApp/SportsDashboard.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = GFJK8DP9ZC;
@@ -553,6 +558,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = iOSApp/SportsDashboard.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = GFJK8DP9ZC;

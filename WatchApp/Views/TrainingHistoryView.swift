@@ -104,14 +104,14 @@ struct TrainingHistoryView: View {
 struct WorkoutDetailView: View {
     let load: DailyTrainingLoad
 
-    @State private var routeCoordinates: [CLLocationCoordinate2D] = []
+    @State private var locations: [CLLocation] = []
     @State private var isLoadingRoute = false
     @State private var distance: Double?
     @State private var pace: Double?
 
     var body: some View {
         WorkoutRouteView(
-            routeCoordinates: routeCoordinates,
+            locations: locations,
             workoutType: load.workoutType ?? "운동",
             date: load.date,
             distance: distance,
@@ -119,7 +119,41 @@ struct WorkoutDetailView: View {
             pace: pace
         )
         .onAppear { loadRoute() }
+        #if os(iOS)
+        .safeAreaInset(edge: .bottom) { flyoverBar }
+        #endif
     }
+
+    #if os(iOS)
+    @ViewBuilder private var flyoverBar: some View {
+        if locations.count >= 2 {
+            NavigationLink {
+                FlyoverReplayView(
+                    locations: locations,
+                    workoutType: load.workoutType ?? "운동",
+                    date: load.date
+                )
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 20))
+                    Text("경로 플라이오버 영상")
+                        .font(.system(size: 15, weight: .semibold))
+                    Spacer()
+                    Image(systemName: "video.fill")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+    #endif
 
     private func loadRoute() {
         isLoadingRoute = true
@@ -182,7 +216,25 @@ struct WorkoutDetailView: View {
         }
         interpolated.append(coords.last!)
 
-        self.routeCoordinates = interpolated
+        // Synthesize a hilly altitude profile (base ~30m, one main climb + rolling bumps)
+        let now = Date()
+        let count = interpolated.count
+        var locs: [CLLocation] = []
+        for (i, c) in interpolated.enumerated() {
+            let progress = Double(i) / Double(max(count - 1, 1))
+            let altitude = 30.0
+                + 35.0 * sin(progress * .pi)        // main hill up then down
+                + 5.0 * sin(progress * .pi * 6)     // rolling bumps
+            locs.append(CLLocation(
+                coordinate: c,
+                altitude: altitude,
+                horizontalAccuracy: 5,
+                verticalAccuracy: 5,
+                timestamp: now
+            ))
+        }
+
+        self.locations = locs
         self.distance = 5000 // 5km
         self.pace = (load.durationMinutes * 60) / 5.0 // seconds per km
         isLoadingRoute = false
@@ -201,17 +253,18 @@ struct WorkoutDetailView: View {
                 return
             }
 
-            let locations = try await HealthKitManager.shared.fetchWorkoutRoute(for: workout)
-            let coords = locations.map { $0.coordinate }
+            let routeLocations = try await HealthKitManager.shared.fetchWorkoutRoute(for: workout)
 
             // Calculate total distance
             var totalDist = 0.0
-            for i in 1..<locations.count {
-                totalDist += locations[i].distance(from: locations[i - 1])
+            if routeLocations.count >= 2 {
+                for i in 1..<routeLocations.count {
+                    totalDist += routeLocations[i].distance(from: routeLocations[i - 1])
+                }
             }
 
             await MainActor.run {
-                self.routeCoordinates = coords
+                self.locations = routeLocations
                 self.distance = totalDist
                 if totalDist > 0 {
                     self.pace = (load.durationMinutes * 60) / (totalDist / 1000)

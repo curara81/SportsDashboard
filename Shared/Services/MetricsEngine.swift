@@ -2,6 +2,11 @@ import Foundation
 
 struct MetricsEngine {
 
+    /// Max minutes a single HR-sample interval can contribute to a load integral.
+    /// Caps long gaps (pause / wrist-off / coarse sampling) instead of discarding
+    /// them, so sparse data doesn't silently zero out a workout's load.
+    static let maxIntervalMinutes: Double = 1.0
+
     // MARK: - HRV Status (21-day baseline)
 
     struct HRVStatus {
@@ -21,10 +26,15 @@ struct MetricsEngine {
     }
 
     static func evaluateHRVStatus(values: [DatedValue]) -> HRVStatus {
-        let twentyOneDayAgo = Calendar.current.date(byAdding: .day, value: -21, to: Date())!
+        // Baseline window must be DISJOINT from the 7-day comparison window, else the
+        // baseline is dragged toward the very average being tested (a sustained dip
+        // raises its own lower bound and masks a real "unbalanced" state).
+        let twentyEightDayAgo = Calendar.current.date(byAdding: .day, value: -28, to: Date())!
         let sevenDayAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
 
-        let baselineValues = values.filter { $0.date >= twentyOneDayAgo }.map(\.value)
+        let baselineValues = values
+            .filter { $0.date >= twentyEightDayAgo && $0.date < sevenDayAgo }
+            .map(\.value)
         let recentValues = values.filter { $0.date >= sevenDayAgo }.map(\.value)
 
         guard baselineValues.count >= 5 else {
@@ -40,7 +50,16 @@ struct MetricsEngine {
         let sd = sqrt(variance)
         let lower = mean - (1.5 * sd)
         let upper = mean + (1.5 * sd)
-        let sevenDayAvg = recentValues.isEmpty ? mean : recentValues.reduce(0, +) / Double(recentValues.count)
+
+        // No recent data → don't fake "Balanced" from the baseline mean.
+        guard !recentValues.isEmpty else {
+            return HRVStatus(
+                baseline: mean, standardDeviation: sd,
+                lowerBound: lower, upperBound: upper,
+                sevenDayAverage: 0, status: .insufficientData
+            )
+        }
+        let sevenDayAvg = recentValues.reduce(0, +) / Double(recentValues.count)
 
         let status: HRVStatus.Status
         if sevenDayAvg < lower { status = .unbalancedLow }
@@ -71,6 +90,13 @@ struct MetricsEngine {
         rhrSevenDayAvg: Double,
         targetSleepHours: Double = 8.0
     ) -> ReadinessResult {
+        // Fail closed on NaN/Inf or bad divisor — otherwise total becomes NaN and the
+        // switch falls through to "부족" with a NaN score that the UI then renders.
+        guard sleepHours.isFinite, todayHRV.isFinite, hrvBaseline.isFinite,
+              hrvLowerBound.isFinite, todayRHR.isFinite, rhrSevenDayAvg.isFinite,
+              targetSleepHours.isFinite, targetSleepHours > 0 else {
+            return ReadinessResult(score: 0, sleepScore: 0, hrvScore: 0, rhrScore: 0, label: "데이터 없음")
+        }
         let sleepScore = min((sleepHours / targetSleepHours) * 100.0, 100.0)
 
         let hrvScore: Double
@@ -86,7 +112,9 @@ struct MetricsEngine {
         if rhrDelta <= 0 {
             rhrScore = 100.0
         } else if rhrDelta >= 5 {
-            rhrScore = max(100.0 - (rhrDelta * 15.0), 0.0)
+            // Continue from 50 (the value at delta=5) instead of jumping to 25.
+            // Old code cliff: delta 4.9→51 but 5.0→25 (a 0.1bpm change dropped 26pts).
+            rhrScore = max(50.0 - (rhrDelta - 5.0) * 15.0, 0.0)
         } else {
             rhrScore = 100.0 - (rhrDelta * 10.0)
         }
@@ -121,8 +149,12 @@ struct MetricsEngine {
 
         for i in 0..<(hrSamples.count - 1) {
             let hr = hrSamples[i].value
-            let durationMin = hrSamples[i + 1].date.timeIntervalSince(hrSamples[i].date) / 60.0
-            guard durationMin > 0 && durationMin < 5 else { continue }
+            let rawDur = hrSamples[i + 1].date.timeIntervalSince(hrSamples[i].date) / 60.0
+            guard rawDur > 0 else { continue }
+            // Cap a single interval so a long gap (pause/wrist-off/sparse sampling)
+            // doesn't count as continuous effort — but don't DISCARD it (that zeroed
+            // out whole workouts on coarse data). See maxIntervalMinutes.
+            let durationMin = min(rawDur, Self.maxIntervalMinutes)
 
             let hrr = (hr - restingHR) / (maxHR - restingHR)
             let clampedHRR = min(max(hrr, 0), 1)
@@ -145,7 +177,7 @@ struct MetricsEngine {
         for i in 0..<(hrSamples.count - 1) {
             let hr = hrSamples[i].value
             let durationMin = hrSamples[i + 1].date.timeIntervalSince(hrSamples[i].date) / 60.0
-            guard durationMin > 0 && durationMin < 5 else { continue }
+            guard durationMin > 0 else { continue }
 
             let pct = hr / maxHR * 100
             let weight: Double
@@ -157,7 +189,7 @@ struct MetricsEngine {
             case 50..<60: weight = 1
             default: weight = 0
             }
-            totalTRIMP += durationMin * weight
+            totalTRIMP += min(durationMin, Self.maxIntervalMinutes) * weight
         }
 
         return totalTRIMP
@@ -244,19 +276,21 @@ struct MetricsEngine {
         vt1HR: Double,
         vt2HR: Double
     ) -> Double {
-        guard hrSamples.count >= 2 else { return 0 }
+        // Guard against unconfigured (0) or swapped/equal thresholds — without this,
+        // vt2HR=0 makes every sample score weight 3 (max anaerobic), wildly inflating load.
+        guard hrSamples.count >= 2, vt1HR > 0, vt2HR > vt1HR else { return 0 }
 
         var totalTRIMP = 0.0
         for i in 0..<(hrSamples.count - 1) {
             let hr = hrSamples[i].value
             let durationMin = hrSamples[i + 1].date.timeIntervalSince(hrSamples[i].date) / 60.0
-            guard durationMin > 0 && durationMin < 5 else { continue }
+            guard durationMin > 0 else { continue }
 
             let weight: Double
             if hr >= vt2HR { weight = 3 }
             else if hr >= vt1HR { weight = 2 }
             else { weight = 1 }
-            totalTRIMP += durationMin * weight
+            totalTRIMP += min(durationMin, Self.maxIntervalMinutes) * weight
         }
         return totalTRIMP
     }
@@ -287,7 +321,18 @@ struct MetricsEngine {
         let variance = recent7.map { pow($0 - mean, 2) }.reduce(0, +) / 7.0
         let sd = sqrt(variance)
 
-        let monotony = sd > 0 ? mean / sd : 0
+        // SD=0 has two opposite meanings:
+        //  - uniform NON-ZERO week = maximum monotony (Foster mean/SD → ∞, highest risk)
+        //  - all-zero rest week = no load, no risk
+        // The old `sd>0 ? mean/sd : 0` scored the dangerous uniform week as safest (0).
+        let monotony: Double
+        if sd > 0 {
+            monotony = mean / sd
+        } else if mean > 0 {
+            monotony = .greatestFiniteMagnitude   // perfectly uniform, non-zero → max monotony
+        } else {
+            monotony = 0                          // genuine full-rest week
+        }
         let strain = weeklyLoad * monotony
 
         let risk: String
@@ -307,7 +352,13 @@ struct MetricsEngine {
         (0.2 * speedMetersPerMin) + (0.9 * speedMetersPerMin * grade) + 3.5
     }
 
-    static func vo2maxFromSwain(percentHRmax: Double) -> Double {
+    /// Swain (1994) regression: %VO2max = 0.64 * %HRmax - 37, rearranged.
+    /// - Parameter percentHRmax: heart rate as a percentage of HRmax (e.g. 90 for 90%).
+    /// - Returns: the corresponding **percentage of VO2max** (e.g. 82.8 means 82.8% of VO2max),
+    ///   NOT an absolute VO2max in ml/kg/min. To get absolute VO2max, multiply by a known
+    ///   reference: `result / 100 * knownVO2maxReference`.
+    ///   Do NOT feed this value into `fitnessAge(vo2max:actualAge:isMale:)`, which expects ml/kg/min.
+    static func swainPercentVO2maxFromPercentHRmax(percentHRmax: Double) -> Double {
         (percentHRmax - 37) / 0.64
     }
 
@@ -315,14 +366,29 @@ struct MetricsEngine {
 
     static func calculateCardiacDrift(hrSamples: [DatedValue]) -> Double? {
         guard hrSamples.count >= 10 else { return nil }
-        let mid = hrSamples.count / 2
-        let firstHalf = hrSamples[..<mid].map(\.value)
-        let secondHalf = hrSamples[mid...].map(\.value)
+        // Split by TIME, not sample index, and use a duration-weighted mean so irregular
+        // sampling / gaps don't bias the result toward densely-sampled segments.
+        let samples = hrSamples.sorted { $0.date < $1.date }
+        let start = samples.first!.date
+        let end = samples.last!.date
+        let total = end.timeIntervalSince(start)
+        guard total > 0 else { return nil }
+        let midTime = start.addingTimeInterval(total / 2)
 
-        let avgFirst = firstHalf.reduce(0, +) / Double(firstHalf.count)
-        let avgSecond = secondHalf.reduce(0, +) / Double(secondHalf.count)
+        func weightedMean(_ lo: Date, _ hi: Date) -> Double? {
+            var num = 0.0, den = 0.0
+            for i in 0..<(samples.count - 1) {
+                let segLo = max(samples[i].date, lo)
+                let segHi = min(samples[i + 1].date, hi)
+                let w = segHi.timeIntervalSince(segLo)
+                if w > 0 { num += samples[i].value * w; den += w }
+            }
+            return den > 0 ? num / den : nil
+        }
 
-        guard avgFirst > 0 else { return nil }
+        guard let avgFirst = weightedMean(start, midTime),
+              let avgSecond = weightedMean(midTime, end),
+              avgFirst > 0 else { return nil }
         return ((avgSecond - avgFirst) / avgFirst) * 100
     }
 
@@ -373,26 +439,31 @@ struct MetricsEngine {
         let recentAvgLoad = recent7.map(\.trimp).reduce(0, +) / 7.0
         let previousAvgLoad = previous7.isEmpty ? recentAvgLoad : previous7.map(\.trimp).reduce(0, +) / 7.0
 
-        let vo2improving = (currentVO2max ?? 0) > (previousVO2max ?? 0)
+        // nil → "unknown" (don't coerce to 0, which made a single-sided value flip the result).
+        let vo2KnownNotImproving: Bool = {
+            guard let c = currentVO2max, let p = previousVO2max else { return false }
+            return c <= p
+        }()
 
         // Strained: very negative TSB + high load
         if currentTSB < -30 && recentAvgLoad > previousAvgLoad * 1.3 {
             return .strained
         }
 
-        // Overreaching: negative TSB + increasing load but no fitness gain
-        if currentTSB < -20 && ctlTrend > 2 && !vo2improving {
+        // Overreaching: negative TSB + increasing load + a MEASURED lack of fitness gain.
+        if currentTSB < -20 && ctlTrend > 2 && vo2KnownNotImproving {
             return .overreaching
         }
 
-        // Peaking: positive TSB + high CTL (taper phase)
-        if currentTSB > 5 && recentCTL > 40 && recentAvgLoad < previousAvgLoad {
-            return .peaking
-        }
-
-        // Recovery: very positive TSB, reduced load
+        // Recovery: very positive TSB + deep load cut. Tested BEFORE Peaking, else any
+        // fit athlete (CTL>40) on a recovery week was mislabeled "Peaking".
         if currentTSB > 10 && recentAvgLoad < previousAvgLoad * 0.5 {
             return .recovery
+        }
+
+        // Peaking: positive TSB + high CTL (genuine taper, not near-complete rest)
+        if currentTSB > 5 && recentCTL > 40 && recentAvgLoad < previousAvgLoad {
+            return .peaking
         }
 
         // Detraining: CTL dropping significantly
@@ -452,7 +523,7 @@ struct MetricsEngine {
             hrvMultiplier = 1.0
         }
 
-        let totalHours = Int(baseHours * fatigueMultiplier * hrvMultiplier)
+        let totalHours = Int((baseHours * fatigueMultiplier * hrvMultiplier).rounded())
 
         let label: String
         switch totalHours {
@@ -483,18 +554,64 @@ struct MetricsEngine {
 
         let norms = isMale ? maleNorms : femaleNorms
 
-        // Find which age bracket the VO2max corresponds to
+        // VO2max decreases with age, so norms are sorted by DESCENDING vo2max.
+        // Clamp above the youngest bracket: very fit → cap at 20.
+        if vo2max >= norms.first!.vo2max { return norms.first!.age }
+        // Clamp below the oldest bracket.
+        if vo2max <= norms.last!.vo2max { return norms.last!.age }
+
+        // Linear interpolation between the two brackets that straddle vo2max.
         for i in 0..<(norms.count - 1) {
-            if vo2max >= norms[i].vo2max {
-                return norms[i].age
-            }
-            if vo2max >= norms[i + 1].vo2max && vo2max < norms[i].vo2max {
-                let fraction = (vo2max - norms[i + 1].vo2max) / (norms[i].vo2max - norms[i + 1].vo2max)
-                return Int(Double(norms[i + 1].age) - fraction * Double(norms[i + 1].age - norms[i].age))
+            let hi = norms[i]       // higher vo2max, younger age
+            let lo = norms[i + 1]   // lower vo2max, older age
+            if vo2max <= hi.vo2max && vo2max > lo.vo2max {
+                let fraction = (vo2max - lo.vo2max) / (hi.vo2max - lo.vo2max) // 0..1
+                let age = Double(lo.age) - fraction * Double(lo.age - hi.age)
+                return Int(age.rounded())
             }
         }
 
         return min(actualAge + 10, 80)
+    }
+
+    // MARK: - Training Effect (aerobic / anaerobic, 0.0–5.0)
+
+    struct TrainingEffect {
+        let aerobic: Double      // 0.0–5.0
+        let anaerobic: Double    // 0.0–5.0
+        let label: String        // benefit description
+    }
+
+    /// Approximate Garmin/Firstbeat-style Training Effect from time-in-zone.
+    /// Aerobic TE rises with total sustained Z2–Z4 time; anaerobic TE rises with
+    /// Z4–Z5 (high-intensity) time. Not Firstbeat-exact, but a defensible proxy.
+    /// zoneSeconds: [Z1,Z2,Z3,Z4,Z5] seconds.
+    static func trainingEffect(zoneSeconds: [TimeInterval]) -> TrainingEffect {
+        guard zoneSeconds.count == 5 else {
+            return TrainingEffect(aerobic: 0, anaerobic: 0, label: "데이터 없음")
+        }
+        let m = zoneSeconds.map { $0 / 60.0 }  // minutes per zone
+
+        // Aerobic load: weighted minutes, saturating. Z2 builds base, Z3/Z4 build more.
+        // Weights tuned so ~45min steady Z3 → ~3.0 ("유지/향상"), ~90min → ~4+.
+        let aerobicWeighted = m[1] * 0.6 + m[2] * 1.0 + m[3] * 1.3 + m[4] * 0.8
+        let aerobic = min(5.0, 5.0 * (1 - exp(-aerobicWeighted / 50.0)))
+
+        // Anaerobic load: only high-intensity Z4/Z5 minutes, saturates faster.
+        let anaerobicWeighted = m[3] * 0.7 + m[4] * 1.6
+        let anaerobic = min(5.0, 5.0 * (1 - exp(-anaerobicWeighted / 12.0)))
+
+        let label: String
+        let peak = max(aerobic, anaerobic)
+        switch peak {
+        case 0..<1.0: label = "효과 미미"
+        case 1.0..<2.0: label = "회복"
+        case 2.0..<3.0: label = "유지"
+        case 3.0..<4.0: label = "향상"
+        case 4.0..<4.5: label = "큰 향상"
+        default: label = "과부하"
+        }
+        return TrainingEffect(aerobic: aerobic, anaerobic: anaerobic, label: label)
     }
 
     // MARK: - Training Load Focus (Aerobic/Anaerobic distribution)
@@ -511,7 +628,8 @@ struct MetricsEngine {
         vt1HR: Double,
         vt2HR: Double
     ) -> LoadFocus {
-        guard hrSamples.count >= 2 else {
+        // Reject unconfigured (0) or swapped/equal thresholds (same bug class as Lucia).
+        guard hrSamples.count >= 2, vt1HR > 0, vt2HR > vt1HR else {
             return LoadFocus(lowAerobic: 0, highAerobic: 0, anaerobic: 0, dominantType: "데이터 없음")
         }
 
@@ -521,8 +639,9 @@ struct MetricsEngine {
 
         for i in 0..<(hrSamples.count - 1) {
             let hr = hrSamples[i].value
-            let dt = hrSamples[i + 1].date.timeIntervalSince(hrSamples[i].date) / 60.0
-            guard dt > 0 && dt < 5 else { continue }
+            let rawDt = hrSamples[i + 1].date.timeIntervalSince(hrSamples[i].date) / 60.0
+            guard rawDt > 0 else { continue }
+            let dt = min(rawDt, Self.maxIntervalMinutes)
 
             if hr >= vt2HR { anaerobicTime += dt }
             else if hr >= vt1HR { highTime += dt }
@@ -565,7 +684,7 @@ struct MetricsEngine {
 
         static func rateGCT(_ ms: Double) -> String {
             switch ms {
-            case 0..<208: return "우수"
+            case 150..<208: return "우수"   // <150ms is non-physiological → treat as bad/missing data
             case 208..<240: return "양호"
             case 240..<273: return "보통"
             default: return "개선 필요"

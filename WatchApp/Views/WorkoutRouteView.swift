@@ -1,9 +1,10 @@
 import SwiftUI
 import MapKit
 import CoreLocation
+import Charts
 
 struct WorkoutRouteView: View {
-    let routeCoordinates: [CLLocationCoordinate2D]
+    let locations: [CLLocation]
     let workoutType: String
     let date: Date
     let distance: Double? // meters
@@ -11,6 +12,10 @@ struct WorkoutRouteView: View {
     let pace: Double?     // seconds per km
 
     @State private var mapPosition: MapCameraPosition = .automatic
+
+    private var routeCoordinates: [CLLocationCoordinate2D] {
+        locations.map { $0.coordinate }
+    }
 
     var body: some View {
         ScrollView {
@@ -31,6 +36,10 @@ struct WorkoutRouteView: View {
                         }
                         .frame(maxWidth: .infinity)
                     }
+                }
+
+                if hasElevationData {
+                    elevationCard
                 }
 
                 summaryCard
@@ -69,6 +78,163 @@ struct WorkoutRouteView: View {
                 .frame(height: 140)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .mapStyle(.standard(elevation: .flat))
+            }
+        }
+    }
+
+    // MARK: - Elevation Profile
+
+    private struct ElevationPoint: Identifiable {
+        let id = UUID()
+        let distanceKm: Double
+        let altitude: Double
+    }
+
+    /// Cumulative distance (km) vs altitude (m) sampled along the route.
+    private var elevationPoints: [ElevationPoint] {
+        guard locations.count >= 2 else { return [] }
+        var points: [ElevationPoint] = [ElevationPoint(distanceKm: 0, altitude: locations[0].altitude)]
+        var cumDist = 0.0
+        for i in 1..<locations.count {
+            cumDist += locations[i].distance(from: locations[i - 1])
+            points.append(ElevationPoint(distanceKm: cumDist / 1000, altitude: locations[i].altitude))
+        }
+        return points
+    }
+
+    /// Total ascent / descent (m) with a hysteresis filter to suppress GPS altitude jitter.
+    private var ascentDescent: (ascent: Double, descent: Double) {
+        guard locations.count >= 2 else { return (0, 0) }
+        let threshold = 1.0 // meters — ignore changes smaller than this
+        var ascent = 0.0
+        var descent = 0.0
+        var reference = locations[0].altitude
+        for loc in locations.dropFirst() {
+            let delta = loc.altitude - reference
+            if delta > threshold {
+                ascent += delta
+                reference = loc.altitude
+            } else if delta < -threshold {
+                descent += -delta
+                reference = loc.altitude
+            }
+        }
+        return (ascent, descent)
+    }
+
+    /// Show the chart only when we have ≥2 points and a meaningful altitude spread.
+    private var hasElevationData: Bool {
+        let pts = elevationPoints
+        guard pts.count >= 2 else { return false }
+        let altitudes = pts.map { $0.altitude }
+        guard let lo = altitudes.min(), let hi = altitudes.max() else { return false }
+        return (hi - lo) > 1.0
+    }
+
+    private var elevationCard: some View {
+        let pts = elevationPoints
+        let summary = ascentDescent
+        let altitudes = pts.map { $0.altitude }
+        let minAlt = altitudes.min() ?? 0
+        let maxAlt = altitudes.max() ?? 0
+
+        return CardView {
+            VStack(alignment: .leading, spacing: 6) {
+                Label("고도 프로파일", systemImage: "mountain.2.fill")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color(white: 0.55))
+
+                Chart(pts) { point in
+                    AreaMark(
+                        x: .value("거리", point.distanceKm),
+                        y: .value("고도", point.altitude)
+                    )
+                    .foregroundStyle(
+                        .linearGradient(
+                            colors: [Color.orange.opacity(0.45), Color.orange.opacity(0.05)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .interpolationMethod(.catmullRom)
+
+                    LineMark(
+                        x: .value("거리", point.distanceKm),
+                        y: .value("고도", point.altitude)
+                    )
+                    .foregroundStyle(Color(red: 1.0, green: 0.6, blue: 0.2))
+                    .lineStyle(StrokeStyle(lineWidth: 1.5))
+                    .interpolationMethod(.catmullRom)
+                }
+                .chartYScale(domain: minAlt...max(maxAlt, minAlt + 1))
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 3)) { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let km = value.as(Double.self) {
+                                Text("\(String(format: "%.1f", km))km")
+                                    .font(.system(size: 7))
+                            }
+                        }
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let m = value.as(Double.self) {
+                                Text("\(Int(m))")
+                                    .font(.system(size: 7))
+                            }
+                        }
+                    }
+                }
+                .frame(height: 100)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                HStack(spacing: 0) {
+                    elevationMetric(
+                        icon: "arrow.up.right",
+                        label: "상승",
+                        value: "\(Int(summary.ascent))",
+                        color: Color(red: 1.0, green: 0.45, blue: 0.35)
+                    )
+                    Spacer()
+                    elevationMetric(
+                        icon: "arrow.down.right",
+                        label: "하강",
+                        value: "\(Int(summary.descent))",
+                        color: Color(red: 0.35, green: 0.65, blue: 1.0)
+                    )
+                    Spacer()
+                    elevationMetric(
+                        icon: "arrow.up.to.line",
+                        label: "최고",
+                        value: "\(Int(maxAlt))",
+                        color: Color(white: 0.85)
+                    )
+                }
+            }
+        }
+    }
+
+    private func elevationMetric(icon: String, label: String, value: String, color: Color) -> some View {
+        VStack(spacing: 1) {
+            HStack(spacing: 2) {
+                Image(systemName: icon)
+                    .font(.system(size: 7))
+                    .foregroundStyle(color)
+                Text(label)
+                    .font(.system(size: 8))
+                    .foregroundStyle(Color(white: 0.55))
+            }
+            HStack(spacing: 1) {
+                Text(value)
+                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .foregroundStyle(color)
+                Text("m")
+                    .font(.system(size: 8))
+                    .foregroundStyle(Color(white: 0.55))
             }
         }
     }

@@ -58,6 +58,15 @@ struct DashboardView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     headerSection
+
+                    // 운동 시작 — 최상단 고정 (운동 앱이니 1순위)
+                    #if os(watchOS)
+                    workoutStartButton
+                    #endif
+
+                    // 오늘의 활동 (걸음/거리/칼로리/운동시간)
+                    dailyActivityCard
+
                     if vm.isLoading {
                         ProgressView()
                             .frame(maxWidth: .infinity, minHeight: 100)
@@ -102,10 +111,6 @@ struct DashboardView: View {
                         runningDynamicsCard
                         loadFocusCard
                         recoveryCard
-
-                        #if os(watchOS)
-                        workoutStartButton
-                        #endif
                         quickLinks
                     }
                     Spacer(minLength: 8)
@@ -746,31 +751,82 @@ struct DashboardView: View {
         }
     }
 
-    // MARK: - Workout Start Button
+    // MARK: - Daily Activity (today)
+
+    private var dailyActivityCard: some View {
+        CardView {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("오늘의 활동", systemImage: "figure.walk.motion")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(DS.dimText)
+                HStack(spacing: 0) {
+                    activityStat("걸음", vm.todaySteps.map { "\(Int($0))" } ?? "--", DS.green)
+                    Spacer()
+                    activityStat("거리", vm.todayDistanceKm.map { String(format: "%.1f", $0) } ?? "--", Color(red: 0.35, green: 0.65, blue: 1.0), unit: "km")
+                    Spacer()
+                    activityStat("칼로리", vm.todayActiveCalories.map { "\(Int($0))" } ?? "--", Color(red: 1.0, green: 0.65, blue: 0.2), unit: "kcal")
+                    Spacer()
+                    activityStat("운동", vm.todayExerciseMinutes.map { "\(Int($0))" } ?? "--", Color(red: 1.0, green: 0.4, blue: 0.4), unit: "분")
+                }
+            }
+        }
+    }
+
+    private func activityStat(_ label: String, _ value: String, _ color: Color, unit: String = "") -> some View {
+        VStack(spacing: 2) {
+            Text(label).font(.system(size: 8)).foregroundStyle(DS.dimText)
+            Text(value).font(.system(size: 15, weight: .bold, design: .rounded)).foregroundStyle(color)
+            if !unit.isEmpty { Text(unit).font(.system(size: 7)).foregroundStyle(DS.dimText) }
+        }
+    }
+
+    // MARK: - Workout Start Button (top of dashboard — primary action)
     #if os(watchOS)
     private var workoutStartButton: some View {
+        VStack(spacing: 6) {
+            // Big primary "운동 시작" button
+            NavigationLink {
+                WorkoutStartView()
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "figure.run")
+                        .font(.system(size: 22, weight: .semibold))
+                    Text("운동 시작")
+                        .font(.system(size: 17, weight: .bold))
+                }
+                .foregroundStyle(.black)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(DS.green)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .buttonStyle(.plain)
+
+            // Quick-start chips per sport (skip countdown to picker)
+            HStack(spacing: 6) {
+                quickSportChip(.running, "figure.run", "러닝")
+                quickSportChip(.walking, "figure.walk", "걷기")
+                quickSportChip(.cycling, "figure.outdoor.cycle", "사이클")
+            }
+        }
+    }
+
+    private func quickSportChip(_ sport: WorkoutManager.SportType, _ icon: String, _ label: String) -> some View {
         NavigationLink {
-            WorkoutStartView()
+            WorkoutStartView(autoStart: sport)
         } label: {
-            HStack {
-                Image(systemName: "play.circle.fill")
-                    .font(.system(size: 20))
-                    .foregroundStyle(DS.green)
-                Text("운동 시작")
-                    .font(.system(size: 15, weight: .bold))
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 10))
+            VStack(spacing: 3) {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundStyle(Color(red: sport.color.r, green: sport.color.g, blue: sport.color.b))
+                Text(label)
+                    .font(.system(size: 9, weight: .medium))
                     .foregroundStyle(DS.dimText)
             }
-            .padding(.vertical, 12)
-            .padding(.horizontal, 14)
-            .background(DS.green.opacity(0.12))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(DS.green.opacity(0.3), lineWidth: 1)
-            )
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(Color(white: 0.16))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
     }

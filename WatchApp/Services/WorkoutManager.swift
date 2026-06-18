@@ -3,6 +3,7 @@ import Foundation
 import HealthKit
 import WatchKit
 import Combine
+import CoreLocation
 
 @MainActor
 final class WorkoutManager: NSObject, ObservableObject {
@@ -11,6 +12,17 @@ final class WorkoutManager: NSObject, ObservableObject {
 
     @Published var isActive = false
     @Published var isPaused = false
+    @Published var isCountingDown = false
+    @Published var isShowingSummary = false        // end → save/discard prompt
+    @Published var countdownValue = 3
+
+    // Frozen summary snapshot (so values don't change while user decides)
+    @Published var summaryDuration: TimeInterval = 0
+    @Published var summaryDistance: Double = 0
+    @Published var summaryAvgPace: Double = 0
+    @Published var summaryAvgHR: Double = 0
+    @Published var summaryCalories: Double = 0
+    @Published var summaryAscent: Double = 0
     @Published var elapsedSeconds: TimeInterval = 0
     @Published var totalDistance: Double = 0       // meters
     @Published var currentPace: Double = 0         // seconds per km
@@ -23,6 +35,54 @@ final class WorkoutManager: NSObject, ObservableObject {
     @Published var paceStatus: PaceStatus = .onTarget
     @Published var currentSpeed: Double = 0        // m/s for cycling
     @Published var averageSpeed: Double = 0        // m/s for cycling
+
+    // GPS / elevation
+    @Published var totalAscent: Double = 0         // meters climbed
+    @Published var totalDescent: Double = 0        // meters descended
+    @Published var currentAltitude: Double = 0     // meters
+    @Published var gpsAccuracy: CLLocationAccuracy = -1  // <0 = no fix yet
+    @Published var hasGPSFix = false
+    @Published var routePointCount = 0
+    /// Live GPS trail for the in-workout map (drawn as a polyline). Mirrors the
+    /// points fed to HKWorkoutRouteBuilder, kept in-memory for real-time display.
+    @Published var routeCoordinates: [CLLocationCoordinate2D] = []
+
+    // Cadence
+    @Published var currentCadence: Double = 0       // steps per minute
+
+    // Laps (auto per-km + manual)
+    @Published var laps: [Lap] = []
+    @Published var currentLapDistance: Double = 0   // meters into current lap
+    @Published var currentLapSeconds: TimeInterval = 0
+
+    // HR zone time (seconds in each of 5 Karvonen zones)
+    @Published var zoneSeconds: [TimeInterval] = [0, 0, 0, 0, 0]
+
+    // Auto-pause
+    @Published var autoPauseEnabled = true
+    @Published var isAutoPaused = false
+
+    struct Lap: Identifiable {
+        let id = UUID()
+        let index: Int
+        let distance: Double        // meters
+        let duration: TimeInterval  // seconds
+        let avgHR: Double
+        let avgPace: Double         // sec/km
+        let ascent: Double          // meters
+        let isManual: Bool
+    }
+
+    // Lap accumulators
+    private var lapStartDistance: Double = 0
+    private var lapStartTime: TimeInterval = 0
+    private var lapStartAscent: Double = 0
+    private var lapHRSamples: [Double] = []
+    // HR zone boundaries (lower bound of each zone, Karvonen), injected at start
+    private var zoneLowerBounds: [Double] = []
+    // Auto-pause tracking
+    private var lowSpeedSeconds = 0
+    private var lastMetricDistance: Double = 0
 
     // MARK: - Workout Type
 
@@ -82,15 +142,30 @@ final class WorkoutManager: NSObject, ObservableObject {
 
     private var session: HKWorkoutSession?
     private var builder: HKLiveWorkoutBuilder?
+    private var routeBuilder: HKWorkoutRouteBuilder?
     private let store = HKHealthStore()
+    private let locationManager = CLLocationManager()
     private var timer: Timer?
+    private var countdownTimer: Timer?
     private var startDate: Date?
     private var lastKmDistance: Double = 0
     private var lastKmTime: TimeInterval = 0
     private var lastHapticTime: Date = .distantPast
     private var hrSamples: [Double] = []
+    private var lastAltitude: Double?           // for ascent/descent delta
+    private var usesGPS = false                 // outdoor sports only
 
     private let hapticCooldown: TimeInterval = 10
+
+    override init() {
+        super.init()
+        locationManager.delegate = self
+        locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
+        locationManager.distanceFilter = kCLDistanceFilterNone
+        // NOTE: allowsBackgroundLocationUpdates는 watchOS watch-only 앱에서
+        // 설정 시 크래시 유발(UIBackgroundModes location 필요, WK앱엔 없음).
+        // watchOS는 HKWorkoutSession이 백그라운드 위치를 자동 관리하므로 불필요.
+    }
 
     private func playHaptic(_ type: Int) {
         #if os(watchOS)
@@ -110,11 +185,99 @@ final class WorkoutManager: NSObject, ObservableObject {
 
     // MARK: - Start Workout
 
-    func startWorkout(type: SportType, targetPace: Double = 0, tolerance: Double = 15) {
+    /// zoneLowerBounds: 5 ascending Karvonen lower bounds [Z1,Z2,Z3,Z4,Z5] for live
+    /// zone-time tracking. Pass UserProfile.zones.map(\.lower). Empty = no zone tracking.
+    func startWorkout(type: SportType, targetPace: Double = 0, tolerance: Double = 15,
+                      zoneLowerBounds: [Double] = []) {
         self.workoutType = type
         self.targetPacePerKm = targetPace
         self.paceToleranceSeconds = tolerance
         self.paceStatus = targetPace > 0 ? .onTarget : .free
+        self.zoneLowerBounds = zoneLowerBounds
+
+        // share(쓰기) 권한 필수: HKLiveWorkoutBuilder가 심박/거리/칼로리를 수집·저장하려면
+        // toShare 필요. 이전 크래시는 NSHealthUpdateUsageDescription 문자열이 너무 짧아
+        // watchOS가 "invalid value" 판정한 것 → Info.plist 문자열 길게 늘려 해결.
+        let share: Set<HKSampleType> = [
+            HKObjectType.workoutType(),
+            HKQuantityType(.heartRate),
+            HKQuantityType(.distanceWalkingRunning),
+            HKQuantityType(.distanceCycling),
+            HKQuantityType(.activeEnergyBurned)
+        ]
+        let read: Set<HKObjectType> = [
+            HKQuantityType(.heartRate),
+            HKQuantityType(.distanceWalkingRunning),
+            HKQuantityType(.distanceCycling),
+            HKQuantityType(.activeEnergyBurned),
+            HKQuantityType(.runningSpeed),
+            HKQuantityType(.stepCount),
+            HKObjectType.workoutType()
+        ]
+        // Request location permission up front (GPS route needs it).
+        locationManager.requestWhenInUseAuthorization()
+
+        store.requestAuthorization(toShare: share, read: read) { [weak self] _, authErr in
+            if let authErr = authErr {
+                print("HealthKit auth error: \(authErr.localizedDescription)")
+            }
+            Task { @MainActor in
+                self?.beginCountdown(type: type)
+            }
+        }
+    }
+
+    // MARK: - Countdown (3-2-1 before start)
+
+    @MainActor
+    private func beginCountdown(type: SportType) {
+        countdownTimer?.invalidate()
+        isCountingDown = true
+        countdownValue = 3
+        playHaptic(3) // notification tick
+
+        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                self.countdownValue -= 1
+                if self.countdownValue > 0 {
+                    self.playHaptic(3) // tick
+                } else {
+                    self.countdownTimer?.invalidate()
+                    self.countdownTimer = nil
+                    self.isCountingDown = false
+                    self.beginSession(type: type)
+                }
+            }
+        }
+    }
+
+    func cancelCountdown() {
+        countdownTimer?.invalidate()
+        countdownTimer = nil
+        isCountingDown = false
+        countdownValue = 3
+        playHaptic(1) // stop
+    }
+
+    @MainActor
+    private func beginSession(type: SportType) {
+        // Optimistic start: flip UI to active IMMEDIATELY so the workout screen
+        // + timer always appear, regardless of whether HKWorkoutSession succeeds.
+        // (Timer is wall-clock based; distance/HR fill in once the builder collects.)
+        let start = Date()
+        startDate = start
+        isActive = true
+        isPaused = false
+        startTimer()
+        playHaptic(0) // start
+
+        // GPS for outdoor sports (run/walk/cycle all outdoor here).
+        usesGPS = true
+        if usesGPS {
+            routeBuilder = HKWorkoutRouteBuilder(healthStore: store, device: nil)
+            locationManager.startUpdatingLocation()
+        }
 
         let config = HKWorkoutConfiguration()
         config.activityType = type.hkType
@@ -132,20 +295,16 @@ final class WorkoutManager: NSObject, ObservableObject {
                 workoutConfiguration: config
             )
 
-            let start = Date()
             session?.startActivity(with: start)
-            builder?.beginCollection(withStart: start) { [weak self] success, error in
-                guard success else { return }
-                Task { @MainActor in
-                    self?.startDate = start
-                    self?.isActive = true
-                    self?.isPaused = false
-                    self?.startTimer()
-                    self?.playHaptic(0) // start
+            builder?.beginCollection(withStart: start) { _, error in
+                if let error = error {
+                    print("beginCollection failed: \(error.localizedDescription)")
                 }
             }
         } catch {
-            print("Workout start failed: \(error)")
+            // Session failed (e.g. permission), but UI is already active so the
+            // user sees the timer running. Metrics just won't populate.
+            print("Workout session start failed: \(error.localizedDescription)")
         }
     }
 
@@ -154,12 +313,14 @@ final class WorkoutManager: NSObject, ObservableObject {
     func pause() {
         session?.pause()
         isPaused = true
+        if usesGPS { locationManager.stopUpdatingLocation() }
         playHaptic(1) // stop
     }
 
     func resume() {
         session?.resume()
         isPaused = false
+        if usesGPS { locationManager.startUpdatingLocation() }
         playHaptic(0) // start
     }
 
@@ -167,23 +328,85 @@ final class WorkoutManager: NSObject, ObservableObject {
         isPaused ? resume() : pause()
     }
 
-    // MARK: - End Workout
+    // MARK: - End Workout (Garmin-style: stop → summary → save/discard)
 
+    /// Stops live tracking and shows the summary screen. Does NOT yet write to
+    /// HealthKit — the user chooses 저장(save) or 삭제(discard) from the summary.
     func endWorkout() {
-        session?.end()
+        // Close the final partial lap so the summary shows complete lap data.
+        if currentLapSeconds > 1 { recordLap(isManual: false) }
+
+        // Freeze the summary snapshot before tearing down.
+        summaryDuration = elapsedSeconds
+        summaryDistance = totalDistance
+        summaryAvgPace = averagePace
+        summaryAvgHR = averageHeartRate
+        summaryCalories = activeCalories
+        summaryAscent = totalAscent
+
+        // Stop the live UI + timers + GPS, switch to summary.
+        isActive = false
+        isPaused = false
+        isCountingDown = false
+        countdownTimer?.invalidate()
+        countdownTimer = nil
         timer?.invalidate()
         timer = nil
+        if usesGPS { locationManager.stopUpdatingLocation() }
 
-        builder?.endCollection(withEnd: Date()) { [weak self] success, error in
-            guard success else { return }
+        // Pause the HK session so collection stops but the builder stays usable
+        // for either save or discard.
+        session?.pause()
+        playHaptic(1) // stop
+
+        isShowingSummary = true
+    }
+
+    /// User chose 저장: finalize the HK workout + attach GPS route.
+    func saveWorkout() {
+        playHaptic(2) // success
+        isShowingSummary = false
+
+        session?.end()
+        builder?.endCollection(withEnd: Date()) { [weak self] _, error in
+            if let error = error {
+                print("endCollection error: \(error.localizedDescription)")
+            }
             self?.builder?.finishWorkout { workout, error in
-                Task { @MainActor in
-                    self?.isActive = false
-                    self?.isPaused = false
-                    self?.playHaptic(2) // success
+                if let error = error {
+                    print("finishWorkout error: \(error.localizedDescription)")
+                    return
+                }
+                guard let workout = workout else { return }
+                print("Workout saved to HealthKit ✓")
+                self?.routeBuilder?.finishRoute(with: workout, metadata: nil) { route, rErr in
+                    if let rErr = rErr {
+                        print("finishRoute error: \(rErr.localizedDescription)")
+                    } else if route != nil {
+                        print("Route attached to workout ✓")
+                    }
+                    // Strava/Garmin/Nike 등 외부 앱 연동은 직접 API 불필요:
+                    // HKWorkout이 건강 앱에 저장되면 스트라바의 "Apple Health 연결"이
+                    // 자동으로 가져감. 우리는 풍부한 HKWorkout(거리/HR/칼로리/route)만
+                    // 잘 쓰면 됨.
                 }
             }
         }
+        reset()
+    }
+
+    /// User chose 삭제: end the session WITHOUT saving anything to HealthKit.
+    func discardWorkout() {
+        playHaptic(1) // stop
+        isShowingSummary = false
+
+        session?.end()
+        // End collection but DON'T call finishWorkout → nothing is persisted.
+        builder?.endCollection(withEnd: Date()) { _, _ in
+            // discardWorkout intentionally never finalizes; HK drops the partial.
+        }
+        builder?.discardWorkout()
+        reset()
     }
 
     // MARK: - Timer
@@ -198,10 +421,67 @@ final class WorkoutManager: NSObject, ObservableObject {
         }
     }
 
+    // MARK: - Laps
+
+    /// Close the current lap and start a new one. Called automatically each km,
+    /// or manually via the lap button.
+    func recordLap(isManual: Bool) {
+        let dist = totalDistance - lapStartDistance
+        let dur = elapsedSeconds - lapStartTime
+        guard dur > 0 else { return }
+        let avgHR = lapHRSamples.isEmpty ? 0 : lapHRSamples.reduce(0, +) / Double(lapHRSamples.count)
+        let pace = dist > 0 ? dur / (dist / 1000.0) : 0
+        let ascent = totalAscent - lapStartAscent
+
+        laps.append(Lap(index: laps.count + 1, distance: dist, duration: dur,
+                        avgHR: avgHR, avgPace: pace, ascent: ascent, isManual: isManual))
+
+        // Reset lap accumulators
+        lapStartDistance = totalDistance
+        lapStartTime = elapsedSeconds
+        lapStartAscent = totalAscent
+        lapHRSamples = []
+        currentLapDistance = 0
+        currentLapSeconds = 0
+        if isManual { playHaptic(3) }
+    }
+
     // MARK: - Metrics Calculation
 
     private func updateMetrics() {
         guard totalDistance > 0, elapsedSeconds > 0 else { return }
+
+        // --- Auto-pause: detect near-zero movement over 1s ticks ---
+        if autoPauseEnabled && workoutType.usePace && !isPaused {
+            let movedThisTick = totalDistance - lastMetricDistance
+            if movedThisTick < 0.5 {            // <0.5 m in 1s ≈ stopped
+                lowSpeedSeconds += 1
+                if lowSpeedSeconds >= 3 && !isAutoPaused {
+                    isAutoPaused = true
+                    playHaptic(1)
+                }
+            } else {
+                if isAutoPaused { isAutoPaused = false; playHaptic(0) }
+                lowSpeedSeconds = 0
+            }
+        }
+        lastMetricDistance = totalDistance
+
+        // Speed (km/h) — computed for ALL types so walking/running show speed too
+        currentSpeed = totalDistance / elapsedSeconds  // m/s
+        averageSpeed = currentSpeed
+
+        // --- HR zone time accumulation (1s per tick into the matching zone) ---
+        if currentHeartRate > 0 && zoneLowerBounds.count == 5 && !isAutoPaused {
+            var z = 0
+            for (i, lb) in zoneLowerBounds.enumerated() where currentHeartRate >= lb { z = i }
+            zoneSeconds[z] += 1
+        }
+
+        // --- Current lap live counters ---
+        currentLapDistance = totalDistance - lapStartDistance
+        currentLapSeconds = elapsedSeconds - lapStartTime
+        if currentHeartRate > 0 { lapHRSamples.append(currentHeartRate) }
 
         if workoutType.usePace {
             // Pace-based (running/walking)
@@ -214,6 +494,8 @@ final class WorkoutManager: NSObject, ObservableObject {
                 lastKmTime = elapsedSeconds
                 lastKmDistance = totalDistance
                 currentKm = completedKm
+                // Auto-lap every completed km
+                recordLap(isManual: false)
                 playHaptic(3) // notification
             }
 
@@ -224,10 +506,6 @@ final class WorkoutManager: NSObject, ObservableObject {
             } else {
                 currentPace = averagePace
             }
-        } else {
-            // Speed-based (cycling)
-            currentSpeed = totalDistance / elapsedSeconds  // m/s
-            averageSpeed = currentSpeed
         }
 
         // Average HR
@@ -281,10 +559,85 @@ final class WorkoutManager: NSObject, ObservableObject {
         lastKmTime = 0
         currentSpeed = 0
         averageSpeed = 0
+        totalAscent = 0
+        totalDescent = 0
+        currentAltitude = 0
+        gpsAccuracy = -1
+        hasGPSFix = false
+        routePointCount = 0
+        routeCoordinates = []
+        currentCadence = 0
+        lastAltitude = nil
+        laps = []
+        currentLapDistance = 0
+        currentLapSeconds = 0
+        zoneSeconds = [0, 0, 0, 0, 0]
+        isAutoPaused = false
+        lapStartDistance = 0
+        lapStartTime = 0
+        lapStartAscent = 0
+        lapHRSamples = []
+        zoneLowerBounds = []
+        lowSpeedSeconds = 0
+        lastMetricDistance = 0
         paceStatus = .onTarget
         isActive = false
         isPaused = false
+        isCountingDown = false
+        countdownValue = 3
+        countdownTimer?.invalidate()
+        countdownTimer = nil
         hrSamples = []
+        // NOTE: isShowingSummary + summary* are intentionally NOT reset here —
+        // saveWorkout/discardWorkout set isShowingSummary=false themselves, and
+        // the summary snapshot can stay until the next workout overwrites it.
+    }
+}
+
+// MARK: - CLLocationManagerDelegate (GPS route + elevation)
+
+extension WorkoutManager: CLLocationManagerDelegate {
+    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        // Filter to recent, accurate fixes (Garmin-style: drop bad GPS points).
+        let now = Date()
+        let good = locations.filter {
+            $0.horizontalAccuracy >= 0 &&
+            $0.horizontalAccuracy <= 50 &&
+            abs($0.timestamp.timeIntervalSince(now)) < 10
+        }
+        guard !good.isEmpty else { return }
+
+        Task { @MainActor in
+            // Feed the HealthKit route builder (this is what gets saved + exported).
+            self.routeBuilder?.insertRouteData(good) { success, error in
+                if let error = error {
+                    print("insertRouteData error: \(error.localizedDescription)")
+                }
+                _ = success
+            }
+
+            for loc in good {
+                // Elevation accumulation (only count meaningful deltas to cut noise).
+                let alt = loc.altitude
+                if let last = self.lastAltitude {
+                    let delta = alt - last
+                    if delta > 0.5 { self.totalAscent += delta }
+                    else if delta < -0.5 { self.totalDescent += -delta }
+                }
+                self.lastAltitude = alt
+                self.currentAltitude = alt
+            }
+            if let latest = good.last {
+                self.gpsAccuracy = latest.horizontalAccuracy
+                self.hasGPSFix = latest.horizontalAccuracy <= 20
+            }
+            self.routePointCount += good.count
+            self.routeCoordinates.append(contentsOf: good.map { $0.coordinate })
+        }
+    }
+
+    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("Location error: \(error.localizedDescription)")
     }
 }
 
@@ -330,6 +683,19 @@ extension WorkoutManager: HKLiveWorkoutBuilderDelegate {
 
                 case HKQuantityType(.activeEnergyBurned):
                     self.activeCalories = statistics?.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0
+
+                case HKQuantityType(.runningSpeed):
+                    // m/s — refine current speed from the native running-speed channel
+                    if let v = statistics?.mostRecentQuantity()?.doubleValue(for: HKUnit.meter().unitDivided(by: .second())) {
+                        self.currentSpeed = v
+                    }
+
+                case HKQuantityType(.stepCount):
+                    // Cadence (spm): derive from step delta over elapsed time.
+                    if let steps = statistics?.sumQuantity()?.doubleValue(for: .count()),
+                       self.elapsedSeconds > 0 {
+                        self.currentCadence = steps / (self.elapsedSeconds / 60.0)
+                    }
 
                 default:
                     break

@@ -72,6 +72,8 @@ targets:
         DEVELOPMENT_TEAM: P469A874Y6
     entitlements:
       path: WatchApp/SportsDashboard.entitlements
+      properties:
+        com.apple.developer.healthkit: true
     dependencies:
       - sdk: HealthKit.framework
       - sdk: SwiftData.framework

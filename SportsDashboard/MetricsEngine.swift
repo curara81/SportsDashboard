@@ -22,10 +22,13 @@ struct MetricsEngine {
     }
 
     static func evaluateHRVStatus(values: [DatedValue]) -> HRVStatus {
-        let twentyOneDayAgo = Calendar.current.date(byAdding: .day, value: -21, to: Date())!
+        // Baseline window DISJOINT from the 7-day comparison window (avoid self-contamination).
+        let twentyEightDayAgo = Calendar.current.date(byAdding: .day, value: -28, to: Date())!
         let sevenDayAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
 
-        let baselineValues = values.filter { $0.date >= twentyOneDayAgo }.map(\.value)
+        let baselineValues = values
+            .filter { $0.date >= twentyEightDayAgo && $0.date < sevenDayAgo }
+            .map(\.value)
         let recentValues = values.filter { $0.date >= sevenDayAgo }.map(\.value)
 
         guard baselineValues.count >= 5 else {
@@ -43,7 +46,14 @@ struct MetricsEngine {
         let lower = mean - (1.5 * sd)
         let upper = mean + (1.5 * sd)
 
-        let sevenDayAvg = recentValues.isEmpty ? mean : recentValues.reduce(0, +) / Double(recentValues.count)
+        guard !recentValues.isEmpty else {
+            return HRVStatus(
+                baseline: mean, standardDeviation: sd,
+                lowerBound: lower, upperBound: upper,
+                sevenDayAverage: 0, status: .insufficientData
+            )
+        }
+        let sevenDayAvg = recentValues.reduce(0, +) / Double(recentValues.count)
 
         let status: HRVStatus.Status
         if sevenDayAvg < lower {
@@ -85,6 +95,13 @@ struct MetricsEngine {
         targetSleepHours: Double = 8.0
     ) -> ReadinessResult {
 
+        // Fail closed on NaN/Inf or bad divisor.
+        guard sleepHours.isFinite, todayHRV.isFinite, hrvBaseline.isFinite,
+              hrvLowerBound.isFinite, todayRHR.isFinite, rhrSevenDayAvg.isFinite,
+              targetSleepHours.isFinite, targetSleepHours > 0 else {
+            return ReadinessResult(score: 0, sleepScore: 0, hrvScore: 0, rhrScore: 0, label: "데이터 없음")
+        }
+
         // S: Sleep score (% of target, capped at 100)
         let sleepScore = min((sleepHours / targetSleepHours) * 100.0, 100.0)
 
@@ -103,7 +120,8 @@ struct MetricsEngine {
         if rhrDelta <= 0 {
             rhrScore = 100.0
         } else if rhrDelta >= 5 {
-            rhrScore = max(100.0 - (rhrDelta * 15.0), 0.0)
+            // Continue from 50 (value at delta=5) — no cliff (was 51→25 at delta 4.9→5.0).
+            rhrScore = max(50.0 - (rhrDelta - 5.0) * 15.0, 0.0)
         } else {
             rhrScore = 100.0 - (rhrDelta * 10.0)
         }

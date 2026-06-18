@@ -2,22 +2,24 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
-	<key>CFBundleVersion</key>
-	<string>1</string>
-	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>수면, 심박수, HRV, 체성분, 운동 데이터를 분석하여 훈련 준비도와 회복 상태를 표시합니다.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>운동 기록을 저장합니다.</string>
+	<string>러닝, 걷기, 사이클 운동 세션을 기록하고 심박수, 이동 거리, 소모 칼로리, 페이스 등의 측정 데이터를 Apple 건강 앱에 저장하여 운동 기록과 훈련 분석에 활용합니다.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>운동 경로 플라이오버 영상을 사진 보관함에 저장합니다.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

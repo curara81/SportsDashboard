@@ -45,7 +45,7 @@ final class HealthKitManager: ObservableObject {
             .restingHeartRate, .heartRateVariabilitySDNN, .heartRate,
             .vo2Max, .bodyMass, .bodyFatPercentage, .leanBodyMass,
             .distanceWalkingRunning, .activeEnergyBurned, .runningSpeed,
-            .stepCount
+            .stepCount, .appleExerciseTime
         ]
         for id in identifiers {
             if let t = HKQuantityType.quantityType(forIdentifier: id) { types.insert(t) }
@@ -65,6 +65,36 @@ final class HealthKitManager: ObservableObject {
     }
 
     // MARK: - Sleep
+
+    struct DailyActivity {
+        var steps: Double = 0
+        var distanceKm: Double = 0
+        var activeCalories: Double = 0
+        var exerciseMinutes: Double = 0
+    }
+
+    /// Today's cumulative activity totals (since local midnight).
+    func fetchTodayActivity() async throws -> DailyActivity {
+        let cal = Calendar.current
+        let startOfDay = cal.startOfDay(for: Date())
+        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: Date(), options: .strictStartDate)
+
+        func sum(_ id: HKQuantityTypeIdentifier, unit: HKUnit) async -> Double {
+            await withCheckedContinuation { cont in
+                let q = HKStatisticsQuery(quantityType: HKQuantityType(id), quantitySamplePredicate: predicate, options: .cumulativeSum) { _, stats, _ in
+                    cont.resume(returning: stats?.sumQuantity()?.doubleValue(for: unit) ?? 0)
+                }
+                store.execute(q)
+            }
+        }
+
+        var a = DailyActivity()
+        a.steps = await sum(.stepCount, unit: .count())
+        a.distanceKm = await sum(.distanceWalkingRunning, unit: .meter()) / 1000.0
+        a.activeCalories = await sum(.activeEnergyBurned, unit: .kilocalorie())
+        a.exerciseMinutes = await sum(.appleExerciseTime, unit: .minute())
+        return a
+    }
 
     func fetchLastNightSleep() async throws -> Double {
         let sleepType = HKCategoryType(.sleepAnalysis)
@@ -168,6 +198,33 @@ final class HealthKitManager: ObservableObject {
             }
             store.execute(query)
         }
+    }
+
+    /// Best recent run for race prediction: the running workout (>=2km) with the
+    /// fastest average pace in the last `daysBack` days. Returns (distanceKm, time).
+    func fetchBestRecentRun(daysBack: Int = 90) async throws -> (distanceKm: Double, time: TimeInterval)? {
+        let workouts = try await fetchWorkouts(daysBack: daysBack)
+        let runs = workouts.filter { $0.workoutActivityType == .running }
+
+        var best: (km: Double, time: TimeInterval, pace: Double)?
+        for w in runs {
+            let meters: Double
+            if let s = w.statistics(for: HKQuantityType(.distanceWalkingRunning))?.sumQuantity()?.doubleValue(for: .meter()) {
+                meters = s
+            } else if #available(watchOS 10.0, iOS 16.0, *), let d = w.totalDistance?.doubleValue(for: .meter()) {
+                meters = d
+            } else { continue }
+
+            let km = meters / 1000.0
+            let dur = w.duration
+            guard km >= 2.0, dur > 0 else { continue }
+            let pace = dur / km   // sec per km
+            if best == nil || pace < best!.pace {
+                best = (km, dur, pace)
+            }
+        }
+        guard let b = best else { return nil }
+        return (b.km, b.time)
     }
 
     func fetchHeartRateSamples(for workout: HKWorkout) async throws -> [DatedValue] {

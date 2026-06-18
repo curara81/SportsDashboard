@@ -17,7 +17,9 @@
 	<key>NSHealthShareUsageDescription</key>
 	<string>수면, 심박수, HRV, 체성분, 운동 데이터를 분석하여 훈련 준비도와 회복 상태를 표시합니다.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>운동 기록을 저장합니다.</string>
+	<string>러닝, 걷기, 사이클 운동 세션을 기록하고 심박수, 이동 거리, 소모 칼로리, 페이스 등의 측정 데이터를 Apple 건강 앱에 저장하여 운동 기록과 훈련 분석에 활용합니다.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>야외 운동 중 이동 경로(GPS)를 기록하고 거리, 페이스, 고도 상승/하강을 정확하게 측정하여 지도와 함께 운동 기록을 남기기 위해 위치 정보를 사용합니다.</string>
 	<key>WKBackgroundModes</key>
 	<array>
 		<string>workout-processing</string>

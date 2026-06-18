@@ -1,0 +1,1120 @@
+[
+ {
+  "subsystem": "HealthKit data access (read/query) + iPhone-Watch sync (SyncManager)",
+  "present": [
+   {
+    "name": "HealthKit read authorization request",
+    "detail": "Both managers request READ-only authorization (toShare: []). Write/share is deliberately omitted. iOS HealthKitManager sets authorizationStatus=.authorized unconditionally after the call (does not actually verify per-type grant). Shared manager has no status tracking.",
+    "location": "Shared/Services/HealthKitManager.swift:59-65, SportsDashboard/HealthKitManager.swift:42-49",
+    "isMock": false
+   },
+   {
+    "name": "Authorized read-type set (Shared/Watch manager)",
+    "detail": "Requests: HKObjectType.workoutType(); HKQuantityType .restingHeartRate, .heartRateVariabilitySDNN, .heartRate, .vo2Max, .bodyMass, .bodyFatPercentage, .leanBodyMass, .distanceWalkingRunning, .activeEnergyBurned, .runningSpeed, .stepCount; HKCategoryType .sleepAnalysis. Note: running-dynamics types (runningPower, runningGroundContactTime, runningVerticalOscillation, runningStrideLength) and workoutRoute are QUERIED later but are NOT in this authorization set, so those queries will return empty/denied unless granted elsewhere.",
+    "location": "Shared/Services/HealthKitManager.swift:42-57",
+    "isMock": false
+   },
+   {
+    "name": "Authorized read-type set (iOS-only manager)",
+    "detail": "Smaller set: .sleepAnalysis (category), .restingHeartRate, .heartRateVariabilitySDNN, .heartRate, .vo2Max, .bodyMass, .bodyFatPercentage, .leanBodyMass, and workoutType(). Does NOT request distanceWalkingRunning, activeEnergyBurned, runningSpeed, or stepCount that the Shared manager requests. Two divergent HealthKitManager classes coexist.",
+    "location": "SportsDashboard/HealthKitManager.swift:29-40",
+    "isMock": false
+   },
+   {
+    "name": "Sleep total (asleep hours) query",
+    "detail": "Queries HKCategoryType(.sleepAnalysis) from 18:00 yesterday to now; sums asleepCore+asleepDeep+asleepREM+asleepUnspecified durations (excludes inBed/awake). Real HealthKit query in both managers.",
+    "location": "Shared/Services/HealthKitManager.swift:69-97, SportsDashboard/HealthKitManager.swift:53-93",
+    "isMock": false
+   },
+   {
+    "name": "Sleep stage breakdown (core/deep/REM/awake)",
+    "detail": "Queries HKCategoryType(.sleepAnalysis), buckets durations by HKCategoryValueSleepAnalysis.asleepCore/asleepDeep/asleepREM/awake into hours. Real. ONLY exists in the Shared/Watch manager; the iOS-only manager has no stage breakdown.",
+    "location": "Shared/Services/HealthKitManager.swift:197-235",
+    "isMock": false
+   },
+   {
+    "name": "Resting heart rate (RHR) series",
+    "detail": "Queries HKQuantityType(.restingHeartRate) over daysBack (default 7), unit count/min. Real in both managers.",
+    "location": "Shared/Services/HealthKitManager.swift:101-109, SportsDashboard/HealthKitManager.swift:97-115",
+    "isMock": false
+   },
+   {
+    "name": "HRV (SDNN) series",
+    "detail": "Queries HKQuantityType(.heartRateVariabilitySDNN) over daysBack (default 21), unit ms. Real in both managers.",
+    "location": "Shared/Services/HealthKitManager.swift:113-121, SportsDashboard/HealthKitManager.swift:119-137",
+    "isMock": false
+   },
+   {
+    "name": "Body composition (mass, body-fat %, lean mass)",
+    "detail": "Queries HKQuantityType(.bodyMass) kg, (.bodyFatPercentage) as percent*100, (.leanBodyMass) kg, over daysBack (default 90). Plus computedLeanBodyMass fallback = mass*(1-fat/100). Real in both managers.",
+    "location": "Shared/Services/HealthKitManager.swift:125-149, SportsDashboard/HealthKitManager.swift:141-175",
+    "isMock": false
+   },
+   {
+    "name": "VO2max series",
+    "detail": "Queries HKQuantityType(.vo2Max) over daysBack (default 90), unit ml/kg*min. Real. ONLY in the Shared/Watch manager; iOS-only manager authorizes vo2Max but has no fetch method for it.",
+    "location": "Shared/Services/HealthKitManager.swift:186-193",
+    "isMock": false
+   },
+   {
+    "name": "Workout history fetch",
+    "detail": "HKSampleQuery on HKObjectType.workoutType() over daysBack (default 90), returns [HKWorkout]. Real. ONLY in Shared/Watch manager (used for TRIMP per comment).",
+    "location": "Shared/Services/HealthKitManager.swift:153-171",
+    "isMock": false
+   },
+   {
+    "name": "Per-workout heart-rate samples",
+    "detail": "Queries HKQuantityType(.heartRate) bounded to a workout's start/end window, count/min. Real. Shared manager only.",
+    "location": "Shared/Services/HealthKitManager.swift:173-182",
+    "isMock": false
+   },
+   {
+    "name": "Per-workout running dynamics",
+    "detail": "Averages HKQuantityType(.runningPower) [watts], (.runningGroundContactTime) [ms], (.runningVerticalOscillation) [cm], (.runningStrideLength) [m] over the workout window. Uses try? so silently yields nil if unauthorized/empty. Real query code, but these 4 types are NOT in the authorization set (line 42-57), so in practice they likely return nothing. Shared manager only.",
+    "location": "Shared/Services/HealthKitManager.swift:239-276",
+    "isMock": false
+   },
+   {
+    "name": "Workout GPS route",
+    "detail": "HKSeriesType.workoutRoute() via HKWorkoutRouteQuery -> [CLLocation]. Real. Shared manager only. Imports CoreLocation. Route type is also NOT in the authorization set, so grant is not guaranteed.",
+    "location": "Shared/Services/HealthKitManager.swift:280-311",
+    "isMock": false
+   },
+   {
+    "name": "SyncManager WCSession activation + reachability",
+    "detail": "Activates WCSession.default, sets self as delegate, publishes isReachable on activation and reachability changes. iOS-only sessionDidBecomeInactive/Deactivate reactivate after watch switch. Real WatchConnectivity wiring.",
+    "location": "Shared/Services/SyncManager.swift:21-26, 63-99",
+    "isMock": false
+   },
+   {
+    "name": "SyncManager sends UserProfile settings (one direction of payload)",
+    "detail": "transferUserInfo (queued, guaranteed delivery) with dictionary: birthYear (Int), isMale (Bool), maxHR (Double), restingHR (Double), targetSleepHours (Double), vt1Percentage (Double), vt2Percentage (Double), syncTimestamp (epoch). This is settings/profile ONLY — no health metrics, no workouts.",
+    "location": "Shared/Services/SyncManager.swift:30-46",
+    "isMock": false
+   },
+   {
+    "name": "SyncManager receives + applies settings",
+    "detail": "didReceiveUserInfo and didReceiveMessage both forward to onSettingsReceived callback. applySettings maps the 7 profile keys back onto a UserProfile (syncTimestamp is sent but never read on apply).",
+    "location": "Shared/Services/SyncManager.swift:50-58, 72-83",
+    "isMock": false
+   }
+  ],
+  "gaps": [
+   "SyncManager transfers ONLY user-profile settings (7 fields). It does NOT sync any health data, workouts, metrics, or computed scores between phone and watch — no transferFile, no application context, no live workout streaming. Garmin Connect-class apps continuously sync activities/metrics; here the watch and phone each independently query their own HealthKit store.",
+   "No write-back to HealthKit anywhere: toShare is [] in both managers. The app cannot save workouts, body metrics, or any sample to Health. Garmin Connect writes activities/weight back to Health.",
+   "Two divergent HealthKitManager implementations (Shared/Services vs SportsDashboard/) with different authorization sets and feature coverage — the iOS-only one lacks VO2max fetch, sleep stages, workout history, per-workout HR, running dynamics, and routes despite authorizing some of those types. Risk of drift/bugs.",
+   "Authorization gap: runningPower, runningGroundContactTime, runningVerticalOscillation, runningStrideLength, and workoutRoute are queried but never requested in readTypes — these likely return empty in production (queries swallow errors via try?).",
+   "iOS manager sets authorizationStatus=.authorized blindly after requestAuthorization without checking authorizationStatus(for:) per type; cannot detect denial.",
+   "No background delivery / observer queries (HKObserverQuery, enableBackgroundDelivery). Data is only pulled on demand, so no automatic updates like Garmin's continuous monitoring.",
+   "Metrics not read at all vs Garmin: SpO2 (oxygenSaturation), respiratory rate, skin/body temperature, ECG, blood pressure, step/floor/distance daily totals (distanceWalkingRunning/stepCount are authorized in Shared manager but never queried), active/basal energy daily totals (activeEnergyBurned authorized but never queried), runningSpeed (authorized but never queried), cycling/swimming-specific metrics, menstrual/mindfulness data, environmental audio exposure.",
+   "No HKWorkoutSession / HKLiveWorkoutBuilder live workout recording shown in these files (a comment at Shared:61 mentions it handles its own auth, but no recording code is present here).",
+   "syncTimestamp is sent but ignored on receive — no last-writer-wins conflict resolution, so a stale device could overwrite newer profile settings."
+  ]
+ },
+ {
+  "subsystem": "Sports-science metrics computation (MetricsEngine)",
+  "present": [
+   {
+    "name": "HRV Status (21-day baseline)",
+    "detail": "evaluateHRVStatus(values:): 21-day baseline mean (μ) + population SD (σ, /N not /N-1); bounds = μ ± 1.5σ; compares 7-day moving average against bounds → Balanced / Unbalanced(Low) / Unbalanced(High) / Insufficient Data. Requires >=5 baseline samples. Real algorithm operating on injected [DatedValue].",
+    "location": "Shared/Services/MetricsEngine.swift:23-53 (duplicated identically in SportsDashboard/MetricsEngine.swift:24-65)",
+    "isMock": false
+   },
+   {
+    "name": "Training Readiness Score",
+    "detail": "calculateReadiness(...): composite = (sleepScore*0.4)+(hrvScore*0.4)+(rhrScore*0.2). Sleep = min(hours/target*100,100), target default 8.0h. HRV = linear interp from lowerBound→baseline (50.0 fallback when lower>=baseline). RHR: delta<=0→100; delta>=5→max(100-delta*15,0); else 100-delta*10. Labels 우수/양호/주의/부족 at 80/60/40. Real.",
+    "location": "Shared/Services/MetricsEngine.swift:65-106 (dup SportsDashboard/MetricsEngine.swift:78-128)",
+    "isMock": false
+   },
+   {
+    "name": "Banister TRIMP (HR-reserve, gender-weighted)",
+    "detail": "calculateTRIMP(...): per-interval TRIMP = durationMin * HRR * k * exp(y*HRR), HRR=(hr-rest)/(max-rest) clamped [0,1]. Constants k=0.64,y=1.92 (male); k=0.86,y=1.67 (female). Skips intervals <=0 or >=5 min. Real.",
+    "location": "Shared/Services/MetricsEngine.swift:110-133",
+    "isMock": false
+   },
+   {
+    "name": "Edwards TRIMP (5-zone)",
+    "detail": "calculateEdwardsTRIMP(...): sums durationMin*weight where weight by %HRmax: >=90→5, 80-90→4, 70-80→3, 60-70→2, 50-60→1, else 0. Real.",
+    "location": "Shared/Services/MetricsEngine.swift:137-164",
+    "isMock": false
+   },
+   {
+    "name": "Lucia TRIMP (3-zone ventilatory threshold)",
+    "detail": "calculateLuciaTRIMP(...): weight 1 below VT1, 2 between VT1-VT2, 3 above VT2; TRIMP = sum(durationMin*weight). Real.",
+    "location": "Shared/Services/MetricsEngine.swift:242-262",
+    "isMock": false
+   },
+   {
+    "name": "Session-RPE Training Load",
+    "detail": "calculateSRPELoad(rpe:durationMinutes:): load = rpe * durationMinutes (Foster sRPE). Real one-liner; depends on caller supplying RPE (subjective input, not derivable from HealthKit).",
+    "location": "Shared/Services/MetricsEngine.swift:266-268",
+    "isMock": false
+   },
+   {
+    "name": "CTL/ATL/TSB — incremental update",
+    "detail": "updateCTLATL(previousCTL:previousATL:todayLoad:): ctl = prevCTL + (todayLoad-prevCTL)/42.0; atl = prevATL + (todayLoad-prevATL)/7.0; tsb = ctl-atl. Labels 최상 컨디션/보통/피로 누적 at tsb>10 / >=-10 / else. Real (simple-average EMA form, time-constants 42/7).",
+    "location": "Shared/Services/MetricsEngine.swift:175-186",
+    "isMock": false
+   },
+   {
+    "name": "CTL/ATL/TSB — full-series EMA",
+    "detail": "calculateTSB(dailyLoads:): seeds ctl=atl=first sample then EMA with ctlDecay=2/(42+1), atlDecay=2/(7+1); tsb=ctl-atl; same 최상/보통/피로 누적 labels. NOTE: this variant exists ONLY in SportsDashboard/MetricsEngine.swift, NOT in Shared. Real.",
+    "location": "SportsDashboard/MetricsEngine.swift:140-167",
+    "isMock": false
+   },
+   {
+    "name": "ACWR (EWMA acute:chronic ratio)",
+    "detail": "updateACWR(...): lambdaA=2/(7+1), lambdaC=2/(28+1); acute=load*λA+(1-λA)*prevAcute; chronic similarly; ratio=acute/chronic. Zone via acwrZone closure: >=1.5 위험, 1.3-1.5 주의, 0.8-1.3 적정, else 부족. Real. (Shared file only.)",
+    "location": "Shared/Services/MetricsEngine.swift:190-212",
+    "isMock": false
+   },
+   {
+    "name": "Heart Rate Recovery (HRR 60s)",
+    "detail": "calculateHRR(peakHR:hrAt60s:): hrr = peak - hrAt60s; rating 우수(>=30)/양호(23-30)/보통(18-23)/미흡(12-18)/주의 필요(else). Real. (Shared file only.)",
+    "location": "Shared/Services/MetricsEngine.swift:216-227",
+    "isMock": false
+   },
+   {
+    "name": "Riegel race-time prediction",
+    "detail": "predictRaceTime(...): targetTime = knownTime * (targetDist/knownDist)^fatigueExponent, default fatigueExponent=1.06. Real. (Shared file only.)",
+    "location": "Shared/Services/MetricsEngine.swift:231-238",
+    "isMock": false
+   },
+   {
+    "name": "VO2max from running speed (ACSM)",
+    "detail": "estimateVO2maxFromRun(speedMetersPerMin:grade=0): VO2 = 0.2*speed + 0.9*speed*grade + 3.5 (ACSM running equation). Real. (Shared file only.)",
+    "location": "Shared/Services/MetricsEngine.swift:303-308",
+    "isMock": false
+   },
+   {
+    "name": "VO2max from %HRmax (Swain)",
+    "detail": "vo2maxFromSwain(percentHRmax:): VO2 = (percentHRmax - 37)/0.64 (Swain %VO2max↔%HRmax regression, inverted). Real. (Shared file only.)",
+    "location": "Shared/Services/MetricsEngine.swift:310-312",
+    "isMock": false
+   },
+   {
+    "name": "Cardiac Drift",
+    "detail": "calculateCardiacDrift(hrSamples:): splits samples in half, returns ((avgSecondHalf-avgFirstHalf)/avgFirstHalf)*100 as % drift; nil if <10 samples. Real. (Shared file only.)",
+    "location": "Shared/Services/MetricsEngine.swift:316-327",
+    "isMock": false
+   },
+   {
+    "name": "Foster Training Monotony & Strain",
+    "detail": "calculateMonotonyStrain(dailyLoads:): weeklyLoad=sum(last7); monotony = mean/SD (population SD over 7 days); strain = weeklyLoad*monotony. Risk 위험 (질병↑) (>2.0) / 주의 (>1.5) / 양호. Needs >=7 days. Real. (Shared file only.)",
+    "location": "Shared/Services/MetricsEngine.swift:279-299",
+    "isMock": false
+   },
+   {
+    "name": "Training Status (Garmin-style 8 levels)",
+    "detail": "evaluateTrainingStatus(loads:currentVO2max:previousVO2max:): heuristic classifier over CTL trend, TSB and 7d-vs-prior-7d avg TRIMP → peaking/productive/maintaining/recovery/unproductive/detraining/overreaching/strained/noStatus. Hard-coded thresholds e.g. strained: TSB<-30 & load>1.3x prior; overreaching: TSB<-20 & ctlTrend>2 & !vo2improving; peaking: TSB>5 & CTL>40 & load decreasing; recovery: TSB>10 & load<0.5x; detraining: ctlTrend<-5 & avgLoad<20; productive: ctlTrend>1 & TSB>-25; unproductive: avgLoad>30 & ctlTrend<=0. Needs >=14 days. Real heuristic; SF Symbols icons per status. (Shared file only.)",
+    "location": "Shared/Services/MetricsEngine.swift:331-415",
+    "isMock": false
+   },
+   {
+    "name": "Recovery Time estimate (hours)",
+    "detail": "estimateRecoveryTime(lastTrimp:currentTSB:hrvStatus:): baseHours from TRIMP (>=200→72, 150-200→48, 100-150→36, 60-100→24, 30-60→18, else 12) * fatigueMultiplier (TSB<-20→1.5, <-10→1.25, >10→0.75, else 1.0) * hrvMultiplier (unbalancedLow→1.3, unbalancedHigh→0.85, else 1.0). Labels 가벼운 회복/하루 회복/충분한 휴식/장기 회복 필요. Real heuristic. (Shared file only.)",
+    "location": "Shared/Services/MetricsEngine.swift:419-466",
+    "isMock": false
+   },
+   {
+    "name": "Fitness Age (from VO2max)",
+    "detail": "fitnessAge(vo2max:actualAge:isMale:): interpolates against hard-coded ACSM-style normative VO2max-by-age tables (male 20→47.0 ... 75→26.0; female 20→40.0 ... 75→20.5, 5-yr steps). Falls back to min(actualAge+10,80). Real lookup/interp. (Shared file only.)",
+    "location": "Shared/Services/MetricsEngine.swift:470-498",
+    "isMock": false
+   },
+   {
+    "name": "Training Load Focus (Aerobic/Anaerobic distribution)",
+    "detail": "calculateLoadFocus(hrSamples:vt1HR:vt2HR:): accumulates time below VT1 / VT1-VT2 / above VT2, returns % split + dominant type (무산소 if anaerobic>40%, 고강도 유산소 if high>40%, else 저강도 유산소). Real. (Shared file only.)",
+    "location": "Shared/Services/MetricsEngine.swift:509-547",
+    "isMock": false
+   },
+   {
+    "name": "Running Dynamics rating thresholds",
+    "detail": "RunningDynamicsEval with rateCadence (>=180 우수…), rateGCT (<208ms 우수…), rateVO (vertical osc <6.7cm 우수…), rateStride (>=1.2m 우수…). Struct holds optional (value,rating) tuples for cadence/GCT/vertical oscillation/stride length. Rating logic real; struct itself is a passive container fed by caller (no computation of the raw dynamics values here). (Shared file only.)",
+    "location": "Shared/Services/MetricsEngine.swift:551-592",
+    "isMock": false
+   }
+  ],
+  "gaps": [
+   "No data plumbing in this layer: every function is a pure stateless calculator taking caller-supplied [DatedValue]/scalars. Whether real HealthKit data reaches these (vs mock) cannot be confirmed from MetricsEngine alone — needs audit of the HealthKit fetch/ViewModel layer.",
+   "Two divergent copies of MetricsEngine exist. Shared/Services/MetricsEngine.swift is the rich version (20+ metrics). SportsDashboard/MetricsEngine.swift contains ONLY HRV, Readiness, and a full-series TSB EMA — it is a stale/partial duplicate. Risk of the app linking the wrong (impoverished) one; the full-series calculateTSB exists only in the app-target copy while updateCTLATL/ACWR/etc. exist only in Shared.",
+   "No actual VO2max from HealthKit HKQuantityType (the running/Swain estimators are standalone formulas, not wired to Apple's native VO2Max).",
+   "No lactate-threshold / FTP / power-based metrics (no running power, no cycling FTP, no power zones) — Garmin computes these.",
+   "No Body Battery / energy-level continuous model (Recovery Time is a one-shot hours estimate, not a draining/charging battery).",
+   "No race-predictor across full distance ladder beyond single Riegel call; no Performance Condition (real-time pace-vs-expected) metric.",
+   "No altitude/heat acclimation, no Training Effect (aerobic/anaerobic TE 0.0-5.0 scale) — only Load Focus distribution.",
+   "No HR-zone definition/derivation here (no max-HR estimation like 220-age, no zone boundary calculator); zones are implied via raw %HRmax thresholds inside TRIMP functions but never exposed as a reusable zone model.",
+   "Population standard deviation used (divide by N) in HRV and Monotony rather than sample SD (N-1) — minor statistical choice worth noting.",
+   "No persistence/trend storage, no unit tests visible in these files, and no sleep-stage / stress-score computation (sleep enters only as a single hours scalar into readiness)."
+  ]
+ },
+ {
+  "subsystem": "Live Workout Tracking (watchOS HealthKit)",
+  "present": [
+   {
+    "name": "Real-time heart rate (current + average)",
+    "detail": "Current HR pulled from HKLiveWorkoutBuilder.statistics mostRecentQuantity (count/min); average HR computed by appending each per-second sampled currentHeartRate to hrSamples and averaging. Displayed as bpm with average sub-line.",
+    "location": "WorkoutManager.swift:409-411, 314-318; WorkoutStartView.swift:434-457; PaceWorkoutView.swift:225-239",
+    "isMock": false
+   },
+   {
+    "name": "Real distance tracking",
+    "detail": "totalDistance (meters) read from HKLiveWorkoutBuilder sumQuantity for distanceWalkingRunning OR distanceCycling, displayed as km with 2 decimals. Real HealthKit-collected data.",
+    "location": "WorkoutManager.swift:413-414; WorkoutStartView.swift:402; PaceWorkoutView.swift:194",
+    "isMock": false
+   },
+   {
+    "name": "Active calories",
+    "detail": "activeCalories from HKLiveWorkoutBuilder sumQuantity for activeEnergyBurned (kcal). Real data, shown in metrics row.",
+    "location": "WorkoutManager.swift:416-417; WorkoutStartView.swift:421",
+    "isMock": false
+   },
+   {
+    "name": "Elapsed time / duration",
+    "detail": "Wall-clock timer: elapsedSeconds = Date().timeIntervalSince(startDate), fired by a 1s Timer that skips ticks while paused. Formatted H:MM:SS / M:SS. Large monospaced timer in status bar.",
+    "location": "WorkoutManager.swift:272-280, 535-541; WorkoutStartView.swift:179-184",
+    "isMock": false
+   },
+   {
+    "name": "Current pace (real, but heuristic)",
+    "detail": "For running/walking: currentPace derived from time elapsed within the current km segment (timeSinceLastKm / kmProgress * 1000) once >100m into a km, else falls back to averagePace. Based on real distance, but a coarse rolling estimate, not a true instantaneous rolling-window pace.",
+    "location": "WorkoutManager.swift:305-311; WorkoutStartView.swift:353; PaceWorkoutView.swift:156",
+    "isMock": false
+   },
+   {
+    "name": "Average pace",
+    "detail": "averagePace = elapsedSeconds / (totalDistance km). Real, simple cumulative average. Displayed for pace sports.",
+    "location": "WorkoutManager.swift:293; WorkoutStartView.swift:364,369; PaceWorkoutView.swift:177",
+    "isMock": false
+   },
+   {
+    "name": "Speed (km/h) for all sports",
+    "detail": "currentSpeed = totalDistance/elapsedSeconds m/s, shown *3.6 as km/h. averageSpeed is just set equal to currentSpeed (no separate averaging). Primary metric for cycling; secondary mini-metric for run/walk.",
+    "location": "WorkoutManager.swift:287-289; WorkoutStartView.swift:365,370,379,386",
+    "isMock": false
+   },
+   {
+    "name": "Per-km splits (basic lap-like)",
+    "detail": "On crossing each whole km, computes lastKmPace = kmTime/(km delta), increments currentKm, fires a haptic. Only the SINGLE most recent km split is stored/shown (lastKmPace), not a list of all laps. No manual lap button.",
+    "location": "WorkoutManager.swift:295-303; WorkoutStartView.swift:461-476; PaceWorkoutView.swift:241-260",
+    "isMock": false
+   },
+   {
+    "name": "Target pace guidance with status",
+    "detail": "PaceStatus (tooFast/onTarget/tooSlow/free) computed by comparing currentPace to targetPacePerKm with paceToleranceSeconds (default 15s). Drives color-coded banner, hare/checkmark/tortoise icons, and status text. Real logic.",
+    "location": "WorkoutManager.swift:320-332, 76-81; PaceWorkoutView.swift:134-146, 299-315; WorkoutStartView.swift:325-333,515-522",
+    "isMock": false
+   },
+   {
+    "name": "Pace deviation haptics with cooldown",
+    "detail": "On status CHANGE away from onTarget: directionUp haptic if tooFast, directionDown if tooSlow, gated by 10s hapticCooldown. Only active when targetPacePerKm>0 (pace-guided mode).",
+    "location": "WorkoutManager.swift:334-346, 96",
+    "isMock": false
+   },
+   {
+    "name": "3-2-1 countdown before start",
+    "detail": "beginCountdown sets isCountingDown, 1s timer decrements countdownValue 3->0 with a notification haptic each tick, then begins session. Cancelable via cancelCountdown (stop haptic). Animated numeric CountdownView.",
+    "location": "WorkoutManager.swift:149-180; WorkoutStartView.swift:99-136; PaceWorkoutView.swift:17-22",
+    "isMock": false
+   },
+   {
+    "name": "Lifecycle haptics",
+    "detail": "start haptic on session begin, success on end, stop on pause, start on resume, notification per km. playHaptic maps int->WKHapticType (start/stop/success/notification/directionUp/directionDown).",
+    "location": "WorkoutManager.swift:98-112, 192,228,234,253,302",
+    "isMock": false
+   },
+   {
+    "name": "Pause / Resume / End controls",
+    "detail": "pause()/resume() call HKWorkoutSession.pause/resume and toggle isPaused (timer respects pause). endWorkout() does optimistic UI exit then session.end + builder.endCollection + finishWorkout (saves to HealthKit). Big Apple-style buttons.",
+    "location": "WorkoutManager.swift:225-268; WorkoutStartView.swift:203-238,480-511; PaceWorkoutView.swift:262-295",
+    "isMock": false
+   },
+   {
+    "name": "Three sport types",
+    "detail": "SportType enum: running, walking, cycling. Each maps to HKWorkoutActivityType, an SF Symbol icon, a color, and usePace flag (false for cycling). Selectable from WorkoutStartView grid.",
+    "location": "WorkoutManager.swift:33-65; WorkoutStartView.swift:33-61",
+    "isMock": false
+   },
+   {
+    "name": "Cycling speed-mode UI",
+    "detail": "For cycling (usePace=false) the main metric switches from pace to current speed km/h with an average-speed sub-metric; km-split card hidden.",
+    "location": "WorkoutStartView.swift:373-387; WorkoutManager.swift:64,291",
+    "isMock": false
+   },
+   {
+    "name": "Apple-style paged active screen",
+    "detail": "ActiveWorkoutView is a 3-page TabView: Controls | Metrics (default center) | Now Playing. Metrics page shows status bar, main metric, distance/time/calorie row, HR card, km-split.",
+    "location": "WorkoutStartView.swift:140-314",
+    "isMock": false
+   },
+   {
+    "name": "Pace-guided race mode (remaining distance)",
+    "detail": "PaceWorkoutView takes targetDistance/targetTimeSeconds, computes targetPacePerKm, shows pre-workout target summary, and during workout adds a 'remaining distance' field (targetKm - distance). Starts running workout with the target pace.",
+    "location": "PaceWorkoutView.swift:4-105, 187-223",
+    "isMock": false
+   },
+   {
+    "name": "HealthKit authorization + save",
+    "detail": "requestAuthorization for share+read of workout/HR/distance(run+cycle)/activeEnergy; on finish, workout is written back to HealthKit. Optimistic-start design keeps UI alive even if session creation fails (metrics just stay 0).",
+    "location": "WorkoutManager.swift:116-147, 182-221, 256-267",
+    "isMock": false
+   },
+   {
+    "name": "Now Playing page",
+    "detail": "Third TabView page is informational ONLY: a music.note icon plus Korean text telling the user to use the side button / control center. No actual media-remote / now-playing integration or transport controls.",
+    "location": "WorkoutStartView.swift:283-314",
+    "isMock": true
+   }
+  ],
+  "gaps": [
+   "No GPS / route map: HKWorkoutConfiguration.locationType is set to .outdoor but there is NO CLLocationManager / HKWorkoutRouteBuilder. No live map, route trace, or GPS-derived path. Distance/pace come solely from HealthKit's pedometer/algorithm, not GPS.",
+   "No elevation / ascent / descent: no altitude, climb, grade, or elevation-gain metric anywhere.",
+   "No cadence: no running cadence (spm) or cycling cadence (rpm) collected or displayed.",
+   "No power: no running power or cycling power-meter support.",
+   "No auto-pause: pause is fully manual; there is no auto-pause/auto-resume on stopping, no stationary detection.",
+   "No real lap system: only the single most recent 1km auto-split is stored (lastKmPace). No lap list/history, no manual lap button, no custom lap distances/intervals, no per-lap HR/pace breakdown table.",
+   "No customizable data fields/screens: metric layout is hardcoded per sport; user cannot choose, reorder, or add data fields or build custom workout screens like Garmin.",
+   "Tiny sport catalog: only running, walking, cycling. Missing swimming (pool/open-water), hiking, treadmill/indoor variants, rowing, strength/HIIT, and the dozens of Garmin profiles.",
+   "No heart-rate zones: HR shown as raw bpm + average only. No zone gauge, %max/HRR zones, time-in-zone, or zone-based alerts.",
+   "No training metrics: no VO2max, training load/effect, recovery, performance condition, or estimated finish/race predictor during the run (PaceWorkoutView only shows static target vs remaining distance).",
+   "No structured/interval workouts: cannot define warmup/work/rest/repeat steps; pace guidance is a single target pace only.",
+   "No Now Playing/media control: the music page is placeholder text, not a functional now-playing widget.",
+   "Average speed is not actually averaged: averageSpeed is just assigned currentSpeed (WorkoutManager.swift:289), so the 'average speed' field is effectively the same as current speed.",
+   "currentPace lacks a smoothing/rolling window: it is a per-km-segment ratio that resets each km, so it can be jumpy/coarse versus Garmin's smoothed instantaneous pace; no GPS means it also can't show pace on a map.",
+   "No lap/screen auto-scroll, no Lactate Threshold, no smart notifications, no on-watch graphs of HR/pace over time during the session.",
+   "Pace tolerance hardcoded to 15s (paceToleranceSeconds default and a literal in PaceWorkoutView), not user-configurable from the UI."
+  ]
+ },
+ {
+  "subsystem": "iPhone App UI, Data Models & SwiftData Persistence (UserProfile / Settings / Dashboard)",
+  "present": [
+   {
+    "name": "iOS Morning Report dashboard (scrollable, pull-to-refresh)",
+    "detail": "iOSDashboardView is a NavigationStack + ScrollView showing header, readiness, training, health, body, and quick-links sections. Has loading state ('데이터 로드 중...'), error state, .task to authorize + loadMorningReport, and .refreshable to reload.",
+    "location": "iOSApp/Views/iOSDashboardView.swift:5-50",
+    "isMock": false
+   },
+   {
+    "name": "Training Readiness score ring (0-100) with sub-scores",
+    "detail": "Circular gauge showing r.score/100 with color thresholds (green >=80, orange 60-80, red <60) and label. Sub-score rows for 수면(sleep)/HRV/RHR each with value + per-component score (sleepScore, hrvScore, rhrScore).",
+    "location": "iOSApp/Views/iOSDashboardView.swift:69-106, 450-462",
+    "isMock": false
+   },
+   {
+    "name": "Training Status + VO2max + Fitness Age cards",
+    "detail": "Shows MetricsEngine.TrainingStatus (peaking/productive/maintaining/recovery/unproductive/overreaching/detraining/strained/noStatus) with icon+color, VO2max in ml/kg/min, and 피트니스 나이 (fitness age) in years.",
+    "location": "iOSApp/Views/iOSDashboardView.swift:108-148, 520-531",
+    "isMock": false
+   },
+   {
+    "name": "Training Balance CTL/ATL/TSB card with 30-day chart",
+    "detail": "Shows CTL, ATL, TSB integers + StatusBadge. Swift Charts AreaMark+LineMark for CTL (solid blue) and ATL (dashed purple) over recentLoads.suffix(30), weekly x-axis stride.",
+    "location": "iOSApp/Views/iOSDashboardView.swift:153-191",
+    "isMock": false
+   },
+   {
+    "name": "ACWR + Recovery Time cards",
+    "detail": "ACWR ratio (2 decimals) with color zones (green 0.8-1.3, orange 1.3-1.5, red >=1.5) + label. Recovery time in hours with color thresholds (green<18, blue<36, orange<60, red>=60) + label.",
+    "location": "iOSApp/Views/iOSDashboardView.swift:193-229, 533-549",
+    "isMock": false
+   },
+   {
+    "name": "Training Load Focus distribution bar",
+    "detail": "Horizontal stacked bar of lowAerobic/highAerobic/anaerobic percentages (저강도/고강도/무산소) with dominantType. Driven by MetricsEngine.LoadFocus.",
+    "location": "iOSApp/Views/iOSDashboardView.swift:231-263",
+    "isMock": false
+   },
+   {
+    "name": "Sleep card with stage breakdown",
+    "detail": "Total sleep hours + %-of-8h indicator, plus stacked bar for Core/Deep/REM/Awake (코어/깊은/REM/각성) with per-stage hours. Stages come from hk.fetchSleepStages().",
+    "location": "iOSApp/Views/iOSDashboardView.swift:269-323",
+    "isMock": false
+   },
+   {
+    "name": "HRV + RHR sparkline charts",
+    "detail": "Two cards with latest value (HRV ms cyan, RHR bpm red) plus 60pt-tall Swift Charts LineMark sparklines reading HealthKitManager.shared.recentHRVValues / recentRHRValues.",
+    "location": "iOSApp/Views/iOSDashboardView.swift:325-378",
+    "isMock": false
+   },
+   {
+    "name": "Running Dynamics card",
+    "detail": "Conditionally shown when runningPower or cadence present. Displays Power(W), Cadence(spm), Ground Contact Time(ms/GCT), Stride Length(m). Note: verticalOscillation is fetched into VM but NOT rendered in this card.",
+    "location": "iOSApp/Views/iOSDashboardView.swift:380-396",
+    "isMock": false
+   },
+   {
+    "name": "Body Composition card",
+    "detail": "Shows body mass (kg), body fat %, lean body mass (kg) — 체중/체지방/제지방. Only shown when bodyMass != nil.",
+    "location": "iOSApp/Views/iOSDashboardView.swift:402-419",
+    "isMock": false
+   },
+   {
+    "name": "Quick-link navigation rows",
+    "detail": "NavigationLinks to RacePredictionView (레이스 예측), TrainingHistoryView (운동 기록), HRZonesView (HR 존, passes vm.userProfile), WeeklyTrendView (주간 트렌드). These target views were NOT in scope to read; existence/working status unverified.",
+    "location": "iOSApp/Views/iOSDashboardView.swift:423-446",
+    "isMock": false
+   },
+   {
+    "name": "Settings: birth year + sex",
+    "detail": "Picker for 출생연도 (1950-2010) and segmented 성별 (남성/여성). onChange triggers save() to SwiftData + watch sync.",
+    "location": "iOSApp/Views/iOSSettingsView.swift:23-37",
+    "isMock": false
+   },
+   {
+    "name": "Settings: max HR (manual or Tanaka-estimated) + resting HR",
+    "detail": "최대 심박수 slider 0-220 (0 = auto Tanaka 208-0.7*age estimate, displayed live); 안정시 심박수 slider 30-100 bpm. Both persist via save().",
+    "location": "iOSApp/Views/iOSSettingsView.swift:39-66",
+    "isMock": false
+   },
+   {
+    "name": "Settings: ventilatory thresholds VT1/VT2 (Lucia TRIMP)",
+    "detail": "VT1 slider 0.60-0.85 (% HRmax, shown as %), VT2 slider 0.80-0.95. Stored as vt1Percentage/vt2Percentage. Note: app does NOT expose LTHR directly — thresholds are %HRmax-based, not lactate-threshold-HR.",
+    "location": "iOSApp/Views/iOSSettingsView.swift:68-88",
+    "isMock": false
+   },
+   {
+    "name": "Settings: target sleep hours",
+    "detail": "목표 시간 slider 5-10h step 0.5, persisted as targetSleepHours.",
+    "location": "iOSApp/Views/iOSSettingsView.swift:90-100",
+    "isMock": false
+   },
+   {
+    "name": "Settings persistence + watch sync",
+    "detail": "save() fetches existing UserProfile via @Query or creates+inserts one, writes all fields, modelContext.save(), then SyncManager.shared.sendSettings(profile:) to push to Apple Watch.",
+    "location": "iOSApp/Views/iOSSettingsView.swift:124-143",
+    "isMock": false
+   },
+   {
+    "name": "UserProfile SwiftData @Model",
+    "detail": "Fields: maxHR, restingHR, isMale, birthYear, vt1Percentage, vt2Percentage, targetSleepHours. Computed: manualMaxHR (nil if 0), vt1HeartRate/vt2HeartRate (= effectiveMaxHR * pct), age, estimatedMaxHR (Tanaka 208-0.7*age), effectiveMaxHR, heartRateReserve (HRmax-RHR), karvonenZone(pct), and 5 HR zones (Z1 회복/Z2 유산소/Z3 템포/Z4 VO2max/Z5 무산소) via Karvonen. Defaults: maxHR 0, RHR 60, male, 1990, sleep 8.0, VT1 0.75, VT2 0.88.",
+    "location": "Shared/Models/UserProfile.swift:4-63",
+    "isMock": false
+   },
+   {
+    "name": "DailyReadiness SwiftData @Model (history)",
+    "detail": "@Attribute(.unique) date; fields score, sleepScore, hrvScore, rhrScore, label, sleepHours, hrvValue, rhrValue. One row per day — readiness history is persistable. NOTE: DashboardViewModel computes readiness into a transient MetricsEngine.ReadinessResult and never inserts DailyReadiness rows in the code reviewed, so this entity appears defined-but-unwritten in the audited path.",
+    "location": "Shared/Models/DailyReadiness.swift:4-29",
+    "isMock": false
+   },
+   {
+    "name": "DailyTrainingLoad SwiftData @Model (workout/load history)",
+    "detail": "@Attribute(.unique) date; fields trimp, sessionRPE?, durationMinutes, avgHR?, maxHR?, workoutType?, ctl, atl, tsb, acwrAcute, acwrChronic. Actively written: processWorkouts() inserts one row per workout day (dedup by date predicate); updateTrainingMetrics() recomputes CTL/ATL/TSB/ACWR across all rows and saves. This is the real persisted training history backing the dashboard charts.",
+    "location": "Shared/Models/DailyTrainingLoad.swift:4-29, WatchApp/ViewModels/DashboardViewModel.swift:252-344",
+    "isMock": false
+   },
+   {
+    "name": "BodyCompositionRecord SwiftData @Model",
+    "detail": "@Attribute(.unique) date; fields mass, fatPercentage?, leanMass?; computed computedLeanMass (= mass*(1-fat/100) fallback). Entity exists but DashboardViewModel reads body comp live from HealthKit (hk.bodyMass etc.) and does NOT insert BodyCompositionRecord rows in the reviewed code — defined-but-unwritten in audited path.",
+    "location": "Shared/Models/BodyCompositionRecord.swift:4-22, WatchApp/ViewModels/DashboardViewModel.swift:75-77",
+    "isMock": false
+   },
+   {
+    "name": "Real HealthKit data pipeline (device builds)",
+    "detail": "On non-simulator, loadMorningReport concurrently fetches last-night sleep, HRV (21d), resting HR (7d), body composition (90d), VO2max (90d), and sleep stages, then computes readiness, HRV status, training status, recovery time, fitness age. Workouts fetched 90d back; TRIMP computed from real HR samples (MetricsEngine.calculateTRIMP with profile RHR/maxHR/sex).",
+    "location": "WatchApp/ViewModels/DashboardViewModel.swift:50-130, 252-297",
+    "isMock": false
+   },
+   {
+    "name": "Workout TRIMP + CTL/ATL/TSB/ACWR computation",
+    "detail": "processWorkouts computes per-day TRIMP from HK heart-rate samples; updateTrainingMetrics iterates all DailyTrainingLoad rows applying MetricsEngine.updateCTLATL and updateACWR (EWMA acute/chronic) to derive CTL/ATL/TSB and ACWR ratio + zone label. Real, working algorithm chain.",
+    "location": "WatchApp/ViewModels/DashboardViewModel.swift:252-344",
+    "isMock": false
+   },
+   {
+    "name": "HKWorkoutActivityType -> Korean name mapping",
+    "detail": "Maps running/cycling/swimming/walking/hiking/yoga/strength/core/elliptical/rowing to Korean labels, default 기타. Used to set DailyTrainingLoad.workoutType.",
+    "location": "WatchApp/ViewModels/DashboardViewModel.swift:358-375",
+    "isMock": false
+   },
+   {
+    "name": "Simulator mock data path",
+    "detail": "#if targetEnvironment(simulator): loadMockData() populates ALL dashboard values with hardcoded/random data — sleep 7.2h, RHR 52, HRV 48, VO2max 48.5, body 72.5kg/15.8%/61kg, running dynamics (power 285/cadence 176/GCT 235/VO 8.2/stride 1.15), 30 days of synthetic TRIMP, random HRV/RHR series, and a hardcoded LoadFocus 62/25/13. The entire simulator experience is placeholder, not real.",
+    "location": "WatchApp/ViewModels/DashboardViewModel.swift:54-55, 132-248",
+    "isMock": true
+   }
+  ],
+  "gaps": [
+   "No GPS / route map / activity detail view in scope: dashboard has no per-workout detail screen, map, splits, or lap data. DailyTrainingLoad stores only aggregate trimp/duration/avgHR/maxHR per day, not full workout tracks.",
+   "No LTHR (lactate threshold heart rate) setting — Garmin uses LTHR for threshold zones. This app only offers %HRmax-based VT1/VT2 and Karvonen zones; no functional-threshold or lactate-threshold input.",
+   "No editable weight / manual weight entry / weight goal in settings — body mass is read-only from HealthKit; UserProfile has no weight field at all (only HR/age/sex/sleep/VT). BodyCompositionRecord entity exists but is never written in the reviewed path.",
+   "No power-zone / running-power-zone or FTP/critical-power configuration — running power is displayed (W) but there is no power threshold or zone setup; only HR zones exist.",
+   "DailyReadiness and BodyCompositionRecord @Models are defined but never persisted in the audited DashboardViewModel — readiness is computed transiently and body comp read live, so there is no historical trend table for readiness or weight despite the entities existing.",
+   "No multi-sport profiles or per-sport zone customization — single global UserProfile with one HR-zone set; no sport-specific max HR or zones (Garmin supports per-activity profiles).",
+   "verticalOscillation is fetched into the view model (line 38, mock line 152) but never displayed in the Running Dynamics card — no vertical oscillation/vertical ratio UI; also no balance, stance-time balance, or step-length-symmetry running metrics.",
+   "No training plan / suggested workout / daily-suggested-workout, no calendar, and no goal/event scheduling (RacePredictionView is referenced but not in scope to confirm).",
+   "No stress, Body Battery / energy, respiration rate, SpO2/pulse-ox, or skin-temperature metrics — readiness is limited to sleep + HRV + RHR only.",
+   "No nutrition/hydration/calorie balance, no steps/floors/daily-activity (move-goal) tracking, and no women's-health/menstrual-cycle tracking on the dashboard.",
+   "No notifications, no manual workout/data entry, and no data-export/share. Settings only covers age, sex, max/resting HR, VT1/VT2, target sleep, plus a static version (1.0) info row.",
+   "Persistence is local SwiftData only with watch sync via SyncManager; no cloud sync/account/backup verified, and no explicit migration/versioning of the SwiftData schema seen."
+  ]
+ },
+ {
+  "subsystem": "Watch screens / view inventory (8 SwiftUI views)",
+  "present": [
+   {
+    "name": "DashboardView (모닝 리포트) — main scroll screen",
+    "detail": "Root NavigationStack with header (date + '모닝 리포트' title), gear→SettingsView toolbar, watchOS '운동 시작' button→WorkoutStartView, and ~16 stacked cards. Loads via DashboardViewModel.authorize()+loadMorningReport(). On simulator uses loadMockData(); on device fetches HealthKit. isLoading shows ProgressView, errors show text.",
+    "location": "WatchApp/Views/DashboardView.swift:51-136",
+    "isMock": false
+   },
+   {
+    "name": "Readiness card (훈련 준비도)",
+    "detail": "0–100 readiness score with color + StatusBadge, plus 3 sub-metrics (수면 hours, HRV ms, RHR bpm) each with a sub-score. Source: MetricsEngine.calculateReadiness from real HealthKit sleep/HRV/RHR (device) or mock values (sim). REAL on device.",
+    "location": "WatchApp/Views/DashboardView.swift:154-185",
+    "isMock": false
+   },
+   {
+    "name": "Training Balance card (트레이닝 밸런스) → WeeklyTrendView",
+    "detail": "CTL/ATL/TSB pills + StatusBadge + 30-day CTL area/line + ATL dashed line Swift Chart. Source: vm.trainingBalance and vm.recentLoads computed by MetricsEngine.updateCTLATL from HealthKit workouts (device). Tappable NavigationLink. REAL on device.",
+    "location": "WatchApp/Views/DashboardView.swift:189-230",
+    "isMock": false
+   },
+   {
+    "name": "ACWR card (부상 위험)",
+    "detail": "Acute:Chronic ratio number (color-coded) + StatusBadge + custom 3-zone gradient bar with draggable-looking indicator dot (부족/적정/위험). Source: vm.acwr / vm.acwrLabel from MetricsEngine.updateACWR over HealthKit loads. REAL on device.",
+    "location": "WatchApp/Views/DashboardView.swift:234-291",
+    "isMock": false
+   },
+   {
+    "name": "HRV Status card (HRV 상태) → HRZonesView",
+    "detail": "7-day avg HRV (ms) + StatusBadge + gradient range bar positioned between lower/upper bound with baseline label. Requires 21+ days data else shows '21일 이상 데이터 필요'. Source: vm.hrvStatus = MetricsEngine.evaluateHRVStatus(real HRV). Tappable→HRZonesView. REAL on device.",
+    "location": "WatchApp/Views/DashboardView.swift:295-353",
+    "isMock": false
+   },
+   {
+    "name": "Training Status card (트레이닝 상태)",
+    "detail": "Single status (peaking/productive/maintaining/recovery/unproductive/detraining/overreaching/strained/noStatus) with SF icon, colored label, badge. Source: MetricsEngine.evaluateTrainingStatus(loads, vo2max). REAL on device.",
+    "location": "WatchApp/Views/DashboardView.swift:511-530",
+    "isMock": false
+   },
+   {
+    "name": "VO2max card",
+    "detail": "VO2max value (ml/kg/min) + Fitness Age (피트니스 나이) color-coded vs actual age. Source: HealthKit fetchVO2max (device) → mock 48.5 (sim); fitnessAge via MetricsEngine.fitnessAge. REAL on device (Apple Watch records VO2max).",
+    "location": "WatchApp/Views/DashboardView.swift:534-567",
+    "isMock": false
+   },
+   {
+    "name": "Sleep card (수면)",
+    "detail": "Total sleep hours+minutes, % of 8h goal, colored progress bar. Source: vm.sleepHours from HealthKit fetchLastNightSleep (device) / 7.2 mock (sim). REAL on device.",
+    "location": "WatchApp/Views/DashboardView.swift:357-397",
+    "isMock": false
+   },
+   {
+    "name": "Sleep Stages card (수면 단계)",
+    "detail": "Stacked horizontal bar + per-stage hours for 코어/깊은/REM/각성. Source: HealthKit fetchSleepStages (device) / mock (sim). REAL on device (requires Apple Watch sleep-stage tracking).",
+    "location": "WatchApp/Views/DashboardView.swift:571-624",
+    "isMock": false
+   },
+   {
+    "name": "Body Composition card (체성분)",
+    "detail": "체중 kg, 체지방 %, 제지방 kg (only shown if available). Source: HealthKit bodyMass/bodyFatPercentage/computedLeanBodyMass (device) / mock (sim). REAL on device but body-fat/lean usually require an external smart scale.",
+    "location": "WatchApp/Views/DashboardView.swift:401-425",
+    "isMock": false
+   },
+   {
+    "name": "RHR card (안정시 심박수) → TrainingHistoryView",
+    "detail": "Latest RHR bpm + 14-point area/line/point Swift Chart of recent RHR. Source: vm.restingHR + HealthKitManager.shared.recentRHRValues (real on device, random mock on sim). Tappable→TrainingHistoryView. REAL on device.",
+    "location": "WatchApp/Views/DashboardView.swift:429-464",
+    "isMock": false
+   },
+   {
+    "name": "HRV Chart card (HRV 추이)",
+    "detail": "Latest HRV ms + HRV trend line/area chart with baseline RuleMark. Source: HealthKitManager.shared.recentHRVValues + vm.hrvStatus.baseline. REAL on device.",
+    "location": "WatchApp/Views/DashboardView.swift:468-507",
+    "isMock": false
+   },
+   {
+    "name": "Running Dynamics summary card (러닝 다이내믹스) → RunningDynamicsView",
+    "detail": "Mini row of 파워(W)/케이던스/GCT(ms)/보폭(m); tap opens detail view. PLACEHOLDER: power/cadence/GCT/VO/stride are ONLY assigned in simulator mock (DashboardViewModel.swift:149-153); the real device path (processWorkouts/loadMorningReport) never sets them, so on a real watch this card renders '러닝 기록 필요' empty state.",
+    "location": "WatchApp/Views/DashboardView.swift:628-676",
+    "isMock": true
+   },
+   {
+    "name": "Load Focus card (트레이닝 부하 분포)",
+    "detail": "Stacked bar 저강도/고강도/무산소 % distribution. PLACEHOLDER: vm.loadFocus is hard-coded only in simulator mock (DashboardViewModel.swift:244-246 = 62/25/13); real device path never computes it, so on device this shows '부하 분포 데이터 없음'.",
+    "location": "WatchApp/Views/DashboardView.swift:680-719",
+    "isMock": true
+   },
+   {
+    "name": "Recovery Time card (회복 시간)",
+    "detail": "Hours-to-recover number (color-coded) + StatusBadge. Source: MetricsEngine.estimateRecoveryTime(lastTrimp, currentTSB, hrvStatus) — computed from real loads on device. REAL on device.",
+    "location": "WatchApp/Views/DashboardView.swift:723-747",
+    "isMock": false
+   },
+   {
+    "name": "Quick Links (레이스 예측, 운동 기록)",
+    "detail": "Two NavigationLink cards → RacePredictionView and TrainingHistoryView. Static navigation. REAL.",
+    "location": "WatchApp/Views/DashboardView.swift:781-819",
+    "isMock": false
+   },
+   {
+    "name": "HRZonesView (심박수 존)",
+    "detail": "Profile row (나이/최대HR/안정HR/HRR) + 5 Karvonen HR zones (Z1 워밍업 … Z5 최대) each with bpm range and % range, color-coded. Source: computed from UserProfile.effectiveMaxHR/restingHR/heartRateReserve (Karvonen). REAL — pure computation from real profile, no live HR.",
+    "location": "WatchApp/Views/HRZonesView.swift:3-87",
+    "isMock": false
+   },
+   {
+    "name": "RunningDynamicsView (러닝 다이내믹스 detail)",
+    "detail": "Up to 5 metric cards: 러닝 파워(W), 케이던스(spm) w/ rating, 지면 접촉 시간(ms) w/ rating, 수직 진동(cm) w/ rating, 보폭(m) w/ rating; ratings from MetricsEngine.RunningDynamicsEval. Empty state if all nil. Values passed in from DashboardView — which are MOCK-only (sim). On device all params are nil so it shows the empty 'Apple Workout으로 러닝 기록 시 자동 수집' placeholder.",
+    "location": "WatchApp/Views/RunningDynamicsView.swift:3-133",
+    "isMock": true
+   },
+   {
+    "name": "WeeklyTrendView (주간 트렌드)",
+    "detail": "Week summary (총 부하/활동일/평균 TRIMP) + daily TRIMP bar chart (last 7 days, color by load) + TSB trend line/area chart + Monotony/Strain card (MetricsEngine.calculateMonotonyStrain). Source: last 7 days derived from passed-in loads [DailyTrainingLoad]. REAL on device (loads from HealthKit).",
+    "location": "WatchApp/Views/WeeklyTrendView.swift:4-154",
+    "isMock": false
+   },
+   {
+    "name": "TrainingHistoryView (운동 기록)",
+    "detail": "List of up to 10 most-recent workouts (trimp>0). Each row: workoutType, date, TRIMP, 평균HR, 최대HR, 시간(분), and CTL/ATL/TSB mini-labels. Tap→WorkoutDetailView. Source: passed-in loads. REAL on device.",
+    "location": "WatchApp/Views/TrainingHistoryView.swift:4-100",
+    "isMock": false
+   },
+   {
+    "name": "WorkoutDetailView (route loader, inside TrainingHistoryView.swift)",
+    "detail": "Wrapper that loads GPS route then renders WorkoutRouteView. ROUTE DATA IS SPLIT: simulator uses loadMockRoute() — a hard-coded Han River 반포~동작 ~5km polyline with random jitter + interpolation, fixed distance=5000m. Real device uses fetchRealRoute() via HealthKitManager.fetchWorkouts + fetchWorkoutRoute (real GPS). Mock only under #if targetEnvironment(simulator).",
+    "location": "WatchApp/Views/TrainingHistoryView.swift:104-227",
+    "isMock": true
+   },
+   {
+    "name": "WorkoutRouteView (경로 지도)",
+    "detail": "MapKit Map with green MapPolyline route + 출발/도착 annotation dots (needs >=2 coords, else 'GPS 경로 없음'), plus summary card: workoutType, date, 거리(km), 시간, 페이스(/km), GPS point count. Source: coordinates/distance/pace passed in (real on device, mock on sim). View itself is REAL; data depends on caller.",
+    "location": "WatchApp/Views/WorkoutRouteView.swift:5-160",
+    "isMock": false
+   },
+   {
+    "name": "RacePredictionView (레이스 예측)",
+    "detail": "Input card: distance wheel picker (5K/10K/하프/풀) + minutes(10–299):seconds(00–59) pickers. Result cards: Riegel-predicted times for all 4 distances (MetricsEngine.predictRaceTime), base distance marked '기준'; watchOS each non-base row links to PaceWorkoutView. Pace card: predicted /km pace per distance. Source: user-entered values + Riegel formula. REAL (calculator; defaults 5K/25:00, no auto-fill from history).",
+    "location": "WatchApp/Views/RacePredictionView.swift:3-183",
+    "isMock": false
+   },
+   {
+    "name": "SettingsView (설정)",
+    "detail": "Edits UserProfile via @Query/SwiftData. Cards: 기본 정보(출생연도 1950–2010, 성별), 심박수(최대HR slider 0–220 w/ Tanaka 208-0.7*age estimate, 안정HR slider 30–100), 환기역치(VT1 60–85%, VT2 80–95% for Lucia TRIMP), 수면 목표(5–10h), info card (v1.0 + algorithms). Auto-saves on change and SyncManager.shared.sendSettings to iPhone. REAL persistence.",
+    "location": "WatchApp/Views/SettingsView.swift:4-213",
+    "isMock": false
+   }
+  ],
+  "gaps": [
+   "No live in-workout metrics screen here (real-time HR/pace/distance during a workout) — these views are post-hoc/summary only; WorkoutStartView/PaceWorkoutView/WorkoutDetailView are referenced but not in the audited set.",
+   "Running Dynamics (power, cadence, ground contact time, vertical oscillation, stride length) is mock-only — never extracted from real HealthKit workouts, so on a real device the dashboard card and RunningDynamicsView are always empty. Garmin treats these as core running metrics.",
+   "Load Focus / training load distribution (저강도/고강도/무산소) is hard-coded in the simulator and never computed on device — Garmin's Training Load Focus is a real anaerobic/aerobic breakdown.",
+   "No elevation/altitude, ascent/descent, or elevation profile chart on the route screen (WorkoutRouteView uses flat map, no climb data). Garmin shows elevation gain and grade.",
+   "No lap/split breakdown on workout detail (Garmin shows per-km/per-lap splits with pace, HR, cadence).",
+   "RacePredictionView is a manual calculator — it does not auto-pull the user's best recent race/effort from history; no VO2max-based predictor or PR tracking like Garmin Race Predictor.",
+   "No multi-sport coverage visible — TRIMP/workouts are running-centric; no cycling power/FTP, swimming SWOLF, or strength-tracking screens.",
+   "No daily activity / steps / floors / calories / Body Battery-equivalent continuous energy screen; readiness is morning-only, not an all-day energy gauge.",
+   "No stress / respiration / SpO2 / pulse-ox screens (Garmin staples).",
+   "No GPS satellite/accuracy or weather screen, and no maps/navigation/courses.",
+   "No notifications, music controls, or safety/incident-detection screens.",
+   "HR Zones screen is static reference only — no time-in-zone per workout or zone distribution from actual sessions.",
+   "No menstrual cycle, hydration, or training-plan/coach (Garmin Coach / suggested workouts) screens.",
+   "Body composition relies on external data (body fat/lean) that Apple Watch can't measure natively, so those fields will usually be blank without a connected smart scale."
+  ]
+ },
+ {
+  "domain": "Garmin planning & engagement: training plans, calendar, scheduled workouts, race predictor/finish time, courses, goals, challenges/badges, segments leaderboards, Connect IQ, data sync/export, notifications",
+  "features": [
+   {
+    "name": "Adaptive training plans (Garmin Coach / Run-Cycle-Tri Coach)",
+    "what": "Multi-week structured plans (5K to marathon, cycling, tri, strength, HIIT) that auto-adjust daily workouts to fitness, schedule, and race date. Inputs include VO2 max, lactate threshold, training load, recovery time, stress, and sleep. The day-to-day adaptation logic is Firstbeat-derived (Acute:Chronic training load, recovery, readiness).",
+    "healthkitFeasible": "partial",
+    "note": "The plan engine itself (the scheduling/periodization tree, workout templates, deload logic) is just app code and can be fully rebuilt — TrainingPeaks-style. What cannot be replicated is the proprietary input signals that drive Garmin's adaptation: Firstbeat VO2 max, lactate-threshold pace/HR, EPOC-based Training Load, and Recovery Time. A third party can substitute open-literature proxies (Daniels VDOT from race results, Banister/TRIMP or TSS-style load from HR + duration via HKQuantityTypeIdentifierHeartRate, HRV-based readiness from HKQuantityTypeIdentifierHeartRateVariabilitySDNN + resting HR), so an adaptive plan is achievable but the auto-adjustment quality will differ and you cannot label it with Garmin's metrics."
+   },
+   {
+    "name": "Training calendar",
+    "what": "A calendar view in Connect that shows planned vs. completed workouts, race events, and lets you drag/schedule sessions; syncs the next scheduled workout to the watch.",
+    "healthkitFeasible": "yes",
+    "note": "Pure application/CloudKit data model — no sensor or Firstbeat dependency. Build the calendar in the iOS app, persist with CloudKit/Core Data, push the day's session to the watch via WatchConnectivity (WCSession transferUserInfo/applicationContext). Completed-workout matching reads back HKWorkout samples. Fully replicable; can also two-way sync with EventKit."
+   },
+   {
+    "name": "Scheduled / structured workouts on-watch (intervals, targets, alerts)",
+    "what": "Guided workout execution on the wrist: warmup/repeat/cooldown steps with pace/HR/power/cadence targets, lap auto-advance, and audio/vibration alerts when in/out of target zone.",
+    "healthkitFeasible": "yes",
+    "note": "Fully doable on watchOS. Run an HKWorkoutSession + HKLiveWorkoutBuilder, read live HR from the builder's HKLiveWorkoutDataSource and live pace/distance from CoreLocation (CLLocationManager), drive step transitions and target-zone haptics with WKInterfaceDevice.play(.notification). Power requires a paired BLE meter (CoreBluetooth/HKQuantityTypeIdentifierRunningPower exists on newer watchOS). No proprietary dependency."
+   },
+   {
+    "name": "Race predictor / finish-time estimate",
+    "what": "Predicted finish times for 5K/10K/half/marathon. Primary input is Firstbeat running VO2 max, supplemented by training history, age and sex; uses HR-vs-pace on flat/steady segments to derive VO2 max, then maps to race times.",
+    "healthkitFeasible": "partial",
+    "note": "The output (a predicted-times table) is easy; the engine is the problem. Garmin's number is anchored to the Firstbeat VO2 max estimate, which is proprietary (sub-maximal HR/pace regression with HRV correction). A third party cannot compute that exact VO2 max. Viable substitutes from HealthKit data: Apple already writes HKQuantityTypeIdentifierVO2Max (its own Cardio Fitness estimate, treadmill/outdoor run derived) which you can read directly; or compute Daniels VDOT / Riegel exponent extrapolation from the user's own recent best efforts in HKWorkout history. Result is a credible predictor but it will not match Garmin's number and cannot use Firstbeat's lactate-threshold or training-status modifiers."
+   },
+   {
+    "name": "Courses (route creation + on-watch navigation/breadcrumb)",
+    "what": "Build or import a GPX/route in Connect, send to watch, then follow it with map/breadcrumb, turn prompts, off-course alerts, ClimbPro elevation, and back-to-start.",
+    "healthkitFeasible": "partial",
+    "note": "Route import/creation and a breadcrumb 'follow the line' overlay are achievable: parse GPX, render with MapKit on watchOS (or a custom Canvas polyline), compare CLLocation against the route to fire off-course haptics and distance-to-next-turn. Limits are platform, not Firstbeat: watchOS MapKit is heavily restricted (limited camera/pitch control, no true vector turn-by-turn engine for arbitrary GPX, heavier battery, weaker offline map tiles than Garmin's dedicated maps). So breadcrumb navigation = yes; rich turn-by-turn with offline topo maps and ClimbPro-style grade segmentation = much harder, hence partial. ClimbPro itself is a Garmin algorithm but can be approximated from the route's elevation profile."
+   },
+   {
+    "name": "Goals (steps, distance, weekly intensity minutes, personal records)",
+    "what": "User-set or auto targets — daily steps/active minutes, weekly running distance, intensity minutes, and automatic PR detection (fastest 1 mi/5K/10K, longest run).",
+    "healthkitFeasible": "yes",
+    "note": "All from standard HealthKit quantity types: HKQuantityTypeIdentifierStepCount, distanceWalkingRunning, appleExerciseTime, activeEnergyBurned; PRs computed by scanning HKWorkout history with HKStatisticsQuery/segment analysis. WHO-style intensity minutes = time above a moderate HR threshold, computable from HR samples. No proprietary data needed."
+   },
+   {
+    "name": "Challenges & badges (gamification)",
+    "what": "Time-boxed step/distance challenges against other users, expedition/connected challenges, and earned achievement badges; weekly leaderboards among connections.",
+    "healthkitFeasible": "partial",
+    "note": "Badge/achievement logic and personal challenges are trivially replicable from HealthKit metrics. The hard part is the social/competitive layer: it requires a backend (accounts, friend graph, real-time leaderboard aggregation) plus a user base to compete against — that's infrastructure and network-effect, not an API gap. Technically buildable (CloudKit sharing or a custom server), so partial: feasible to engineer, but you must supply the whole social network Garmin already has."
+   },
+   {
+    "name": "Segments & segment leaderboards",
+    "what": "Defined route segments (Strava-style or Garmin segments) with auto-detection during an activity, live segment effort, and global/friends leaderboards with PRs and rankings.",
+    "healthkitFeasible": "partial",
+    "note": "On-device segment matching and timing are doable: store segment polylines, geo-match the live CLLocation track, time the effort, compare to the user's own history. The leaderboard/community ranking again needs a server and a population of other athletes' efforts on the same segment. No sensor/Firstbeat blocker — purely backend + adoption. Easiest path is integrating Strava's segment API rather than rebuilding it."
+   },
+   {
+    "name": "Connect IQ (3rd-party watch apps, data fields, faces, widgets store)",
+    "what": "An open SDK + app store letting developers add custom watch apps, data fields, watch faces, and widgets to Garmin devices.",
+    "healthkitFeasible": "no",
+    "note": "Not replicable, and not the right frame: Connect IQ is Garmin opening THEIR closed device to third parties. On Apple Watch the analog is simply native watchOS app development (SwiftUI/WatchKit) plus complications via WidgetKit — Apple's platform is already open to developers and has the App Store. You cannot create a third-party plugin marketplace inside someone else's app on watchOS, and you cannot run Monkey C/Connect IQ apps. So as a 'feature to replicate inside a single HealthKit app,' it is no; as a platform capability, watchOS already provides the equivalent through its own SDK."
+   },
+   {
+    "name": "Data sync & export (FIT/TCX/GPX, Strava/TrainingPeaks, API access)",
+    "what": "Auto-sync activities to the cloud and push/export to third parties (Strava, TrainingPeaks, etc.) and download raw FIT/TCX/GPX files.",
+    "healthkitFeasible": "yes",
+    "note": "Fully feasible. Read HKWorkout + HKWorkoutRoute (CLLocation samples) and per-second HR/cadence/power, then serialize to GPX/TCX/FIT in your own code; upload via Strava/TrainingPeaks OAuT APIs. iOS Health already lets the app write workouts so they appear system-wide. The only nuance: Apple's FIT files aren't native, but you can author standards-compliant FIT/TCX yourself. No proprietary dependency."
+   },
+   {
+    "name": "Smartphone notifications on the watch (texts, calls, calendar, app alerts)",
+    "what": "Mirroring/displaying incoming phone notifications (SMS, calls, third-party app alerts) on the wrist, with smart-reply on some models.",
+    "healthkitFeasible": "no",
+    "note": "Not replicable by a third-party app, and unrelated to HealthKit. On Garmin this works because Garmin is the whole OS receiving ANCS (Apple Notification Center Service) over BLE. On Apple Watch, OS-level notification mirroring is handled by watchOS/Apple itself for ALL apps automatically — a third-party app cannot read or rebroadcast other apps' notifications (no API to access the iOS notification stream; sandboxed). A third party can only post ITS OWN notifications (UNUserNotificationCenter) and use WatchConnectivity to coordinate iPhone-side. So the 'aggregate all phone notifications' feature is impossible for a third-party app — but on Apple Watch it's also unnecessary since watchOS already does it natively."
+   }
+  ]
+ },
+ {
+  "domain": "Garmin post-activity analysis (Garmin Connect + running/multisport watches)",
+  "features": [
+   {
+    "name": "Splits / Laps table (auto-lap + manual lap)",
+    "what": "Per-lap/per-km (or per-mile) table of distance, time, avg/max pace, avg HR, cadence, elevation gain, etc. Garmin generates laps from auto-lap distance triggers, manual lap presses, or position. Pure arithmetic over the time-series record.",
+    "healthkitFeasible": "yes",
+    "note": "Fully replicable. HKWorkoutBuilder/HKWorkoutEvent supports lap markers (HKWorkoutEventType.lap/segment/marker), and you have the raw HR (HKQuantityTypeIdentifierHeartRate), distance (HKQuantityTypeIdentifierDistanceWalkingRunning) and CoreLocation/HKWorkoutRouteBuilder GPS streams to slice into any split window. No proprietary algorithm involved — just aggregation of streams you already collect."
+   },
+   {
+    "name": "HR zones — time-in-zone",
+    "what": "Bar/table showing seconds spent in HR Zone 1-5, with zones defined as % of HRmax, %HRR (Karvonen), or %LTHR. Computed by bucketing each HR sample into a zone and summing dwell time.",
+    "healthkitFeasible": "yes",
+    "note": "Trivially replicable. HealthKit streams beat-by-beat/second-by-second HR via HKLiveWorkoutBuilder's didCollectDataOf during the session. The app sets its own zone boundaries (from user-entered HRmax/LTHR/resting HR) and buckets samples. No Firstbeat dependency. Only caveat: Garmin's auto-detected HRmax/LTHR for zone boundaries must instead be user-entered or app-estimated."
+   },
+   {
+    "name": "Pace zones — time-in-zone",
+    "what": "Time spent in pace bands (e.g. recovery / endurance / threshold / interval / repetition), where Garmin can auto-derive band edges from lactate-threshold pace. Buckets each speed sample into a pace band and sums.",
+    "healthkitFeasible": "partial",
+    "note": "The bucketing/aggregation is fully replicable from the CoreLocation speed/distance stream. The 'partial' is only because Garmin's auto-derived pace-zone edges come from its proprietary lactate-threshold-pace estimate (see LT row). A HealthKit app can replicate the feature with user-defined pace bands or bands derived from a recent race / its own LT estimate, but cannot reproduce Garmin's exact auto-zoned edges."
+   },
+   {
+    "name": "Training Effect — Aerobic (0.0-5.0)",
+    "what": "Quantifies aerobic training stimulus from the PEAK EPOC reached during the session, scaled by the user's VO2max/fitness level, HR intensity vs HRmax, and duration. Firstbeat Analytics proprietary model.",
+    "healthkitFeasible": "partial",
+    "note": "Not reproducible exactly — the 0-5 scale and EPOC->TE mapping are Firstbeat IP. But a close functional analog is buildable from HealthKit raw HR + duration + a VO2max estimate using published EPOC-accumulation models (e.g. TRIMP / Banister, or open EPOC approximations) and a personalized normalization. Output would correlate with Garmin's aerobic TE but not match its numbers; the curve-fitting and personal-history calibration Firstbeat uses are not public."
+   },
+   {
+    "name": "Training Effect — Anaerobic (0.0-5.0)",
+    "what": "Quantifies high-intensity/anaerobic stimulus from the anaerobic contribution to EPOC, using HR AND speed/power dynamics and bout structure (intervals, sprints). Firstbeat proprietary.",
+    "healthkitFeasible": "no",
+    "note": "Hardest of the TE pair. Firstbeat's anaerobic model leans on rapid HR kinetics, HRV during effort, and speed/power to separate the anaerobic EPOC fraction. HealthKit does NOT publish HRV (SDNN/beat-to-beat) DURING a workout (HRV is sampled at rest, via the Breathe/Mindfulness path), and watchOS has no native running-power. You can heuristically flag high-intensity bouts from HR/speed spikes, but a validated anaerobic-EPOC score is not achievable without the proprietary algorithm and in-workout HRV."
+   },
+   {
+    "name": "Training Load (acute) + per-session load",
+    "what": "Per-session load = total EPOC-based stress; Acute Load = exponentially-weighted sum over the last ~7 days; used for the acute:chronic ratio. Built on Firstbeat EPOC.",
+    "healthkitFeasible": "partial",
+    "note": "The aggregation/rolling-window math (acute load, EWMA over 7 days) is trivial. The 'partial' is because the per-session load unit is Firstbeat-EPOC-derived. A HealthKit app can substitute a well-established public load metric (TRIMP, Banister TRIMP, or Apple's workout energy/HR-based score) and roll it up identically. Functionally equivalent dashboard; numbers won't match Garmin's EPOC-based scale."
+   },
+   {
+    "name": "Training Load Ratio (acute:chronic / Load Focus)",
+    "what": "Chronic Load = ~4-week average; ratio of acute to chronic flags overtraining/injury risk and Load Focus categorizes anaerobic vs high/low aerobic load distribution.",
+    "healthkitFeasible": "partial",
+    "note": "The ACWR ratio and the optimal-range banding are public sports-science concepts and fully implementable in the app's own database from per-session loads. 'Partial' inherits from the underlying load unit being a substitute, not Garmin's EPOC. Load Focus (splitting load into anaerobic vs aerobic buckets) depends on the same anaerobic-vs-aerobic split that requires the proprietary model, so that sub-feature degrades."
+   },
+   {
+    "name": "EPOC (Excess Post-exercise Oxygen Consumption)",
+    "what": "Modeled accumulated oxygen debt (ml/kg) over the session — the core physiological input that feeds Training Effect, recovery time, and load. Firstbeat derives it from HR + HRV time-series modeling against the user's HR-VO2 relationship.",
+    "healthkitFeasible": "no",
+    "note": "EPOC itself is the Firstbeat secret sauce. Accurate modeling needs continuous HRV/respiration-derived intensity plus a calibrated personal HR->VO2 curve, neither of which HealthKit exposes in-workout (no live HRV). You can approximate accumulated oxygen consumption from HR-reserve integration, but a validated EPOC value is not replicable. Everything Garmin derives downstream from EPOC therefore degrades to approximations."
+   },
+   {
+    "name": "Recovery Time (hours)",
+    "what": "Hours of recommended recovery before the next hard effort, computed from session EPOC + current VO2max, then adjusted by acute/chronic load and how far the session's TE exceeded normal.",
+    "healthkitFeasible": "partial",
+    "note": "Reproducible as a heuristic but not as Garmin's number. Inputs Garmin uses (EPOC, VO2max, ACWR) are partly unavailable (EPOC). A HealthKit app can build a recovery estimate from a substitute load metric + resting-HRV trend (HealthKit DOES give resting/overnight HRV SDNN and resting HR, which are strong recovery signals Garmin also uses) + sleep (HKCategoryTypeIdentifierSleepAnalysis). Result is a credible recovery recommendation, just not Firstbeat-calibrated hours."
+   },
+   {
+    "name": "VO2max estimate (running)",
+    "what": "Estimated maximal oxygen uptake (ml/kg/min) by extrapolating the HR-vs-speed relationship during runs (Firstbeat linear/nonlinear model), using GPS pace + HR and age-based HRmax. ~5-10% MAPE.",
+    "healthkitFeasible": "yes",
+    "note": "Replicable WITHOUT Firstbeat because Apple ships its own VO2max: Apple Watch (Series 3+) estimates VO2max from outdoor walk/run/hike using an ODE + deep-neural-network model (±1.2 ml/kg/min, ~4%) and writes it to HealthKit as HKQuantityTypeIdentifierVO2Max. The app just reads that quantity type. Alternatively the app can compute its own HR-vs-pace extrapolation from CoreLocation+HR. So the user-facing metric is fully achievable; only Garmin's specific algorithm/number is proprietary."
+   },
+   {
+    "name": "Lactate Threshold (HR + pace) auto-detection",
+    "what": "Auto-detects LTHR and LT pace from a guided/qualifying run by finding where the HR-pace relationship breaks and where respiration rate (derived from HRV) inflects, requiring ~10+ min above threshold with GPS+HR.",
+    "healthkitFeasible": "no",
+    "note": "The flagship Firstbeat-dependent feature. Its detection hinges on RESPIRATION RATE DERIVED FROM HRV measured continuously DURING hard running — and HealthKit/watchOS does not publish in-workout HRV or beat-to-beat RR during a session (HRV samples are resting-only). Without live HRV/respiration you cannot replicate the respiration-inflection detection. A HealthKit app can only offer a crude HR-pace deflection estimate or a guided field-test (e.g. 30-min TT, take avg HR of last 20 min) entered by the user — far from Garmin's auto-detection."
+   },
+   {
+    "name": "Performance Condition (real-time +/- vs baseline)",
+    "what": "A running +/- value (~ -20 to +20) shown ~6-20 min into an activity indicating whether today's performance is above/below your recent baseline, from HR + pace + HRV efficiency vs expected.",
+    "healthkitFeasible": "no",
+    "note": "Firstbeat computes this from the real-time HR-vs-pace efficiency AND in-session HRV trend compared to a personalized expected curve. The HRV-during-effort input is unavailable in HealthKit, and the 'expected performance' baseline curve is proprietary. A HealthKit app could show a coarse 'pace at given HR vs your recent average' indicator, but not the validated Performance Condition value."
+   },
+   {
+    "name": "GPS map + Elevation profile",
+    "what": "Map trace of the route plus an elevation-vs-distance chart, with total ascent/descent and grade-adjusted views.",
+    "healthkitFeasible": "yes",
+    "note": "Fully replicable. CoreLocation provides lat/lon/altitude and the route is persisted via HKWorkoutRouteBuilder (insertRouteData) and read back with HKWorkoutRouteQuery. Render the polyline with MapKit and the altitude series as an elevation chart. Barometric altitude is also available (CMAltimeter) for better ascent/descent, matching Garmin's barometric elevation. No proprietary dependency."
+   },
+   {
+    "name": "Segment analysis (auto-matched + leaderboards)",
+    "what": "Named route segments with effort time, PR-on-segment, and competitive leaderboards (KOM/QOM-style), matched against the recorded GPS track.",
+    "healthkitFeasible": "partial",
+    "note": "The geometry — matching your GPS track (from HKWorkoutRouteQuery) against a stored segment polyline and timing the effort — is fully buildable client-side. What's NOT replicable solo is the social/leaderboard network and crowd-sourced segment database; that requires either building your own segment backend + user base or integrating Strava's API. So per-user segment timing/PRs = yes; cross-user leaderboards = needs external infrastructure, not a sensor/algorithm limitation."
+   },
+   {
+    "name": "PRs / Records (personal bests)",
+    "what": "Tracks bests: fastest 1k/5k/10k/half/marathon, longest run, most ascent, etc., and flags new PRs after an activity. Garmin's running PRs key off total activity time/distance.",
+    "healthkitFeasible": "yes",
+    "note": "Fully replicable, and an app can do it BETTER than Garmin: with the full per-second distance+time stream from HealthKit/CoreLocation you can find the fastest rolling window for any distance ANYWHERE inside an activity (Strava-style), not just whole-activity bests. Pure post-processing over the app's own HealthKit-sourced history; no proprietary input. Only requirement is the app retains its own activity database to compare against."
+   }
+  ]
+ },
+ {
+  "domain": "Garmin daily/wellness & training-load metrics vs. HealthKit replicability",
+  "features": [
+   {
+    "name": "Body Battery",
+    "what": "0-100 'energy reserve' gauge updated continuously all day. Firstbeat engine fuses CONTINUOUS 24/7 beat-to-beat HRV (drives stress/recovery classification), accelerometer activity, and sleep to model charge (rest/sleep) vs. drain (stress/exertion) against a personalized baseline. The core dependency is all-day passive HRV from RR intervals while awake and at rest.",
+    "healthkitFeasible": "no",
+    "note": "Killed by Apple's HRV model, not by the math. Apple Watch only computes HRV as HKQuantityTypeIdentifierHeartRateVariabilitySDNN, sampled opportunistically/sparsely (~once per few hrs, mainly during Breathe/Mindfulness or still moments) - NOT continuous. Raw RR/beat-to-beat intervals are NOT exposed to third parties outside an active workout session (HKHeartbeatSeriesQuery only returns Apple's own irregular measurements, no continuous all-day stream). Without continuous daytime HRV you cannot reproduce the minute-by-minute stress-vs-recovery classification Body Battery is built on. Best a HealthKit app can do is a crude proxy from sparse SDNN + active-energy + steps + sleep, which will not track Garmin's curve."
+   },
+   {
+    "name": "All-day stress (0-100)",
+    "what": "Continuous stress score derived from HRV (RMSSD-based) sampled second-by-second throughout the day via the optical HR sensor; Firstbeat classifies each moment as rest/low/medium/high stress relative to personal baseline.",
+    "healthkitFeasible": "no",
+    "note": "Same root blocker as Body Battery: requires continuous all-day HRV. HealthKit gives only sparse SDNN samples and no continuous RR stream off-workout, plus off-watch health data can be delayed up to ~30 min, so real-time minute-resolution stress is not reconstructable. During an HKWorkoutSession you get ~1Hz HR and can derive HRV, but that is only during a workout, not all-day."
+   },
+   {
+    "name": "Sleep score (0-100)",
+    "what": "Nightly 0-100 composite from sleep duration, stage proportions (deep/light/REM/awake), overnight HRV-derived stress, restlessness/movement, and respiration, aggregated by Firstbeat.",
+    "healthkitFeasible": "partial",
+    "note": "Apple Watch natively records sleep stages (HKCategoryValueSleepAnalysis: awake/asleepREM/asleepCore/asleepDeep, watchOS 9+), plus overnight respiratory rate and resting HR, all readable via HealthKit. An app CAN build its own 0-100 score from these inputs. The gap: no continuous overnight HRV/stress signal (only sparse SDNN), so the autonomic-recovery component of Garmin's score cannot be matched, and the stage classifier is Apple's, not tunable. So the inputs exist for a credible composite but it will not be the same algorithm."
+   },
+   {
+    "name": "Sleep stages (deep / light / REM / awake)",
+    "what": "Per-epoch hypnogram from accelerometer + HR + HRV + respiration via proprietary classifier; Garmin validation ~69% accuracy (kappa ~0.54), Firstbeat HRV method reports ~0.87 deep / ~0.84 REM in lab.",
+    "healthkitFeasible": "yes",
+    "note": "Apple Watch computes and exposes its own staged sleep (awake/REM/Core/Deep) through HKCategoryValueSleepAnalysis on watchOS 9+; a third-party app reads it directly. You don't replicate Garmin's classifier, you consume Apple's equivalent. You CANNOT build a better/custom stager because raw overnight RR and accelerometer streams aren't exposed - but the staged output itself is available."
+   },
+   {
+    "name": "HRV status (7-day avg vs. personal baseline)",
+    "what": "Overnight RMSSD measured continuously through the night, averaged, rolled into a 7-day average and compared to a ~19-night personal baseline range; status = balanced / unbalanced / low / poor.",
+    "healthkitFeasible": "partial",
+    "note": "The PATTERN (7-day rolling average vs. baseline, balanced/unbalanced banding) is trivial to reproduce in app code. The DATA is the problem two ways: (1) Apple's metric is SDNN, not RMSSD - RMSSD is more parasympathetic/respiration-sensitive and is what Garmin/Whoop/Oura use, so values aren't comparable; (2) Apple samples HRV sparsely and opportunistically, not continuously across the whole sleep window, so the overnight average is built on far fewer beats. You can ship a 'HRV status' feature off HealthKit SDNN, but it's a coarser, methodologically different metric than Garmin's overnight-RMSSD baseline."
+   },
+   {
+    "name": "Resting heart rate",
+    "what": "Lowest sustained HR (typically overnight/at-rest), tracked daily with trend.",
+    "healthkitFeasible": "yes",
+    "note": "Apple Watch computes RHR natively and exposes it as HKQuantityTypeIdentifierRestingHeartRate. Direct read, fully equivalent. No proprietary dependency."
+   },
+   {
+    "name": "Respiration rate (all-day + overnight)",
+    "what": "Breaths/min derived from HRV/optical-HR waveform, tracked continuously day and night.",
+    "healthkitFeasible": "partial",
+    "note": "Available as HKQuantityTypeIdentifierRespiratoryRate, but on Apple Watch it is reported almost exclusively during SLEEP (and in some breathe/workout contexts), not as a true all-day continuous waking signal the way Garmin shows it. So overnight respiration: yes; continuous daytime respiration: not reliably exposed."
+   },
+   {
+    "name": "Pulse Ox / SpO2 (spot + overnight)",
+    "what": "Blood-oxygen saturation via red/IR LEDs (pulse oximetry), on-demand spot checks and optional overnight averaging/trend.",
+    "healthkitFeasible": "partial",
+    "note": "Hardware-gated, not algorithm-gated. HKQuantityTypeIdentifierOxygenSaturation exists and is readable, BUT Apple disabled the Blood Oxygen feature on Apple Watch Series 9/Ultra 2/10 sold in the US from Jan 2024 due to the Masimo patent dispute (later re-enabled via an iPhone-side workaround in late 2024/2025 on updated units). On hardware where it's active (Series 6-8, Ultra 1, non-US units, or post-fix US units), an app reads SpO2 from HealthKit. Where it's disabled or on watches without the sensor, no SpO2 at all. Hence partial - depends entirely on device/region/firmware."
+   },
+   {
+    "name": "Steps",
+    "what": "Daily step count from accelerometer pedometer.",
+    "healthkitFeasible": "yes",
+    "note": "HKQuantityTypeIdentifierStepCount, native and direct. Fully equivalent."
+   },
+   {
+    "name": "Floors climbed",
+    "what": "Flights ascended via barometric altimeter.",
+    "healthkitFeasible": "yes",
+    "note": "HKQuantityTypeIdentifierFlightsClimbed, computed by the watch's barometer and exposed directly."
+   },
+   {
+    "name": "Intensity minutes (moderate/vigorous)",
+    "what": "WHO-style weekly minutes of moderate (1x) and vigorous (2x) activity, accumulated when HR is elevated above a personal threshold for a sustained period.",
+    "healthkitFeasible": "partial",
+    "note": "Apple's direct analog is HKQuantityTypeIdentifierAppleExerciseTime (Exercise ring minutes), which is close but uses Apple's own elevated-effort definition, not Garmin's HR-zone thresholds. To match Garmin's moderate-vs-vigorous split and personal HR thresholds you'd recompute from continuous HR + active energy yourself. The raw HR/energy data is available, so a custom intensity-minutes metric is buildable, but it won't be identical to either Apple's or Garmin's out of the box."
+   },
+   {
+    "name": "Training Readiness (0-100)",
+    "what": "Daily 0-100 readiness from six factors: last-night sleep score, sleep history (3 nights), recovery time, HRV status, acute load, and stress history (3 days), each weighted by Firstbeat.",
+    "healthkitFeasible": "partial",
+    "note": "Composite logic is reproducible and the scaffolding inputs (sleep, RHR, exercise time, workout-derived load) are obtainable, so you can ship a readiness score. But three of the six inputs are themselves weak/unavailable on HealthKit: HRV status (SDNN not RMSSD, sparse), stress history (needs continuous all-day HRV - effectively absent), and Garmin's EPOC-based load/recovery-time (needs the proprietary load model below). The Firstbeat factor weightings are undisclosed. Result: a plausible but materially different readiness estimate, not a faithful replica."
+   },
+   {
+    "name": "Training load (EPOC-based, per activity)",
+    "what": "Per-workout physiological load = Firstbeat EPOC: models real-time oxygen consumption from beat-to-beat HR during the activity, quantifying excess post-exercise oxygen consumption (the O2 debt to return to rest).",
+    "healthkitFeasible": "partial",
+    "note": "During an HKWorkoutSession with HKLiveWorkoutBuilder you DO get high-rate (~1Hz) HR samples, so you can compute a per-workout load. But the EPOC model itself is proprietary Firstbeat; you'd substitute an open surrogate (e.g., Banister TRIMP / Edwards HR-zone TRIMP / heart-rate-reserve TRIMP). Functionally similar 'load' number, different algorithm and scale - cannot match Garmin's units/values."
+   },
+   {
+    "name": "Acute load (7-day) & Chronic load (4-week) / load ratio",
+    "what": "Acute = rolling ~7-day exponentially weighted sum of per-activity load; Chronic = ~4-week baseline; ratio flags overtraining/injury risk (analogous to ACWR).",
+    "healthkitFeasible": "partial",
+    "note": "The rolling-window aggregation and ratio are pure bookkeeping over your per-workout load values, easily implemented. Feasibility is entirely inherited from the per-activity load above: since you can compute a TRIMP-style per-workout load from HKWorkoutSession HR, you CAN compute acute/chronic/ratio - but on a non-Firstbeat load scale, so numbers won't match Garmin's. Also limited to workouts the app itself records or that exist in HealthKit with usable HR."
+   },
+   {
+    "name": "Training Status (productive / maintaining / overreaching / detraining / peaking / recovery)",
+    "what": "State machine combining training-load trend WITH VO2 max trend direction to label the training phase.",
+    "healthkitFeasible": "partial",
+    "note": "The classification logic is reproducible IF you have its two inputs. Load trend: derivable (see acute/chronic). VO2 max trend: Apple computes its own VO2max (HKQuantityTypeIdentifierVO2Max, range ~14-65, HR+GPS during outdoor walk/run/hike, ~5% accuracy) and exposes it - so you CAN track a VO2max trend, but it's Apple's estimate updated only after qualifying outdoor cardio, not Garmin's continuous Firstbeat estimate. You can build an equivalent status classifier; thresholds and the underlying VO2max/load values differ from Garmin's."
+   },
+   {
+    "name": "VO2 max (cardiorespiratory fitness, prerequisite for Status & Fitness Age)",
+    "what": "Firstbeat estimate from HR + pace (GPS) during running/walking, plus RHR and weight; updates after qualifying runs.",
+    "healthkitFeasible": "yes",
+    "note": "Listed because it underpins Training Status and Fitness Age. Apple Watch produces its own VO2max via the same general principle (HR + GPS pace, no mask, must exceed ~130% RHR on <5% grade) and writes HKQuantityTypeIdentifierVO2Max. A HealthKit app reads it directly. It's Apple's number not Firstbeat's, but the metric itself is fully available."
+   },
+   {
+    "name": "Fitness age",
+    "what": "Age-equivalent of fitness; newer Firstbeat version blends VO2 max with vigorous-activity intensity, resting HR, and BMI/body-fat%; discount capped (~max ~10-11 yrs below chronological).",
+    "healthkitFeasible": "partial",
+    "note": "All ingredients are readable from HealthKit: VO2max (HKVO2Max), RHR (HKRestingHeartRate), body mass/height for BMI (HKBodyMass/HKHeight) or body-fat% (HKBodyFatPercentage), and vigorous-activity minutes (HKAppleExerciseTime / derived). So an app CAN compute a comparable 'fitness age', and the published norm tables (e.g., Firstbeat/ACSM VO2max-by-age percentiles) are usable. The exact Firstbeat weighting/regression and the discount cap are proprietary, so the output is an approximation of, not identical to, Garmin's number."
+   }
+  ]
+ },
+ {
+  "domain": "Garmin Connect / Garmin running &amp; multisport watches — DURING-activity (live recording) feature set, with HealthKit/Apple Watch third-party replication feasibility",
+  "features": [
+   {
+    "name": "Live data screens (multiple pages of data)",
+    "what": "User-configurable activity screens shown during recording; user swipes/presses between pages of live fields. Garmin allows many pages, each with 1-8 fields.",
+    "healthkitFeasible": "yes",
+    "note": "Fully replicable. A watchOS SwiftUI app running an HKWorkoutSession can render any number of custom paged screens. No Garmin tech involved; this is pure UI on top of live HealthKit/CoreLocation data."
+   },
+   {
+    "name": "Configurable data fields (per-field layout)",
+    "what": "User picks which metric appears in each cell (pace, distance, HR, time, etc.) with grid layouts (e.g. 1-up to 8-up).",
+    "healthkitFeasible": "yes",
+    "note": "Replicable as app UI. Field values come from HKLiveWorkoutBuilder statistics(for:) (HR, energy, distance, speed, cadence) and CoreLocation (pace/distance/GPS). Only constraint vs Garmin is the smaller physical screen."
+   },
+   {
+    "name": "Manual laps",
+    "what": "User presses lap button to split the activity; each lap stores its own summary (lap time, distance, avg pace/HR).",
+    "healthkitFeasible": "yes",
+    "note": "Replicable. App tracks a lap start timestamp and computes per-segment aggregates itself; HealthKit also supports HKWorkoutEvent of type .lap / .segment and HKWorkoutBuilder.addWorkoutEvents to persist them into the saved workout."
+   },
+   {
+    "name": "Auto Lap (distance- or position-triggered)",
+    "what": "Automatically triggers a lap every X distance (e.g. each 1 km/mi) or by position (lap at start point).",
+    "healthkitFeasible": "yes",
+    "note": "Replicable in-app: monitor cumulative distance from HKLiveWorkoutBuilder/CoreLocation and fire a lap marker (HKWorkoutEvent.lap) at each threshold. Position-based ('lap by location') is also doable with CoreLocation geofencing logic. Pure app logic, no Garmin sensor."
+   },
+   {
+    "name": "Auto Pause (stop timer when stationary / below speed)",
+    "what": "Pauses the activity timer automatically when you stop or drop below a speed threshold, resumes when moving.",
+    "healthkitFeasible": "partial",
+    "note": "Logic is replicable (watch speed/HR/motion thresholds, then HKWorkoutSession.pause()/resume()), and HealthKit will exclude paused time. But Garmin's detection is tuned and instantaneous via dedicated firmware; a third-party app polling CoreLocation speed has more latency and battery cost, and cannot match Garmin's low-level sensor fusion responsiveness. Functionally yes, parity-of-quality partial."
+   },
+   {
+    "name": "GPS track recording (route/breadcrumb)",
+    "what": "Records the lat/long track at ~1 Hz for the route map; supports multi-GNSS (GPS/GLONASS/Galileo/multiband) on Garmin.",
+    "healthkitFeasible": "yes",
+    "note": "Replicable via CoreLocation (CLLocationManager, kCLLocationAccuracyBestForNavigation) and CLLocationUpdate; route is attached to the workout via HKWorkoutRouteBuilder.insertRouteData. Caveat: Apple Watch is single-frequency GNSS except Ultra (L1+L5 dual-band), so raw positional accuracy can trail Garmin multiband watches in canyons/forest — a hardware limit, not an API limit."
+   },
+   {
+    "name": "Elevation / total ascent-descent (barometric)",
+    "what": "Live elevation and cumulative ascent/descent from a barometric altimeter, GPS-corrected.",
+    "healthkitFeasible": "yes",
+    "note": "Replicable. Apple Watch has a barometric altimeter exposed via CMAltimeter (relativeAltitude is accurate to ~cm; startAbsoluteAltitudeUpdates gives GPS+barometer-fused absolute altitude on Series 6+/Ultra). Total ascent computed from barometric deltas matches Garmin closely. CoreLocation altitude alone is noisy, so use CMAltimeter."
+   },
+   {
+    "name": "Grade / incline (% slope)",
+    "what": "Live running/riding grade as a percentage (rise over run).",
+    "healthkitFeasible": "partial",
+    "note": "Computable in-app: derive vertical change from CMAltimeter and horizontal distance from CoreLocation, then grade = dV/dH. Works but is noisy at the short time windows needed for a 'live' number; Garmin smooths it well in firmware. Achievable approximation, not turnkey API."
+   },
+   {
+    "name": "Cadence (running, steps/min)",
+    "what": "Real-time running cadence (total steps/min), shown live and as a data field.",
+    "healthkitFeasible": "yes",
+    "note": "Replicable. HKLiveWorkoutBuilder exposes runningSpeed and, via the workout data source, step/cadence-related data; CMPedometer (currentCadence, in steps/sec) on iPhone/derived on watch and HKQuantityTypeIdentifier.stepCount give cadence directly from the wrist accelerometer. No chest strap needed — Garmin also derives wrist cadence from accelerometer."
+   },
+   {
+    "name": "Running power (watts)",
+    "what": "Real-time running power. Garmin native running power (watch-based) requires a barometer and uses pace, grade, wind (with some sensors), accel; not part of Firstbeat. Garmin also supports Stryd/HRM-Pro power.",
+    "healthkitFeasible": "yes",
+    "note": "Replicable. Apple computes native running power and exposes it as HKQuantityTypeIdentifier.runningPower, available LIVE to third-party apps via HKLiveWorkoutDataSource (outdoor running, Apple Watch SE/Series 6+). It is Apple's own model (not Firstbeat), so no Garmin IP is needed; app just reads mostRecentQuantity(). Algorithms differ from Garmin so absolute watts won't match exactly, but the metric is natively available."
+   },
+   {
+    "name": "Stride length (m)",
+    "what": "Live stride/step length in meters, a running-dynamics metric.",
+    "healthkitFeasible": "yes",
+    "note": "Replicable. Native HKQuantityTypeIdentifier.runningStrideLength, collected by default and exposed live to third-party apps via HKLiveWorkoutBuilder (outdoor run, Series 6+). Apple derives it from the wrist accelerometer + speed — same class of sensor Garmin uses (Garmin needs HRM-Run/Pod for torso-based version, but watch-only stride length is comparable)."
+   },
+   {
+    "name": "Ground contact time (ms) + balance",
+    "what": "Garmin: time foot is on the ground per step (ms), plus left/right GCT balance %. Requires HRM-Run/HRM-Pro chest strap or Running Dynamics Pod measuring torso accel.",
+    "healthkitFeasible": "partial",
+    "note": "Ground contact time itself IS native on Apple: HKQuantityTypeIdentifier.runningGroundContactTime, live to third-party apps via HKLiveWorkoutBuilder (outdoor run, Series 6+) — measured from the wrist, no chest strap. The PART that is NOT replicable is GCT left/right BALANCE: that requires a torso-mounted accelerometer (Garmin chest strap/pod) to distinguish left vs right foot; the wrist sensor cannot, and HealthKit exposes no GCT-balance type."
+   },
+   {
+    "name": "Vertical oscillation (cm) + vertical ratio",
+    "what": "Garmin: torso bounce per step (cm) and vertical ratio (VO/stride length, %). Traditionally needs HRM-Run/Pro chest strap measuring torso vertical motion.",
+    "healthkitFeasible": "partial",
+    "note": "Vertical oscillation is native on Apple: HKQuantityTypeIdentifier.runningVerticalOscillation, live to third-party apps via HKLiveWorkoutBuilder (outdoor run, Series 6+), wrist-derived. So the core metric is replicable without a chest strap. Vertical ratio is not a HealthKit type but is trivially computed (VO / stride length, both available). 'Partial' only because Apple's wrist-based VO differs from Garmin's torso-based VO and there is no HealthKit ratio type (compute it yourself)."
+   },
+   {
+    "name": "Pace alerts (target/range)",
+    "what": "Audible/vibration alert when pace goes above/below a target or outside a range.",
+    "healthkitFeasible": "yes",
+    "note": "Replicable two ways: (a) app computes pace from CoreLocation and fires WKInterfaceDevice.play(.notification)/haptics on threshold; (b) WorkoutKit PaceRangeAlert / SpeedRangeAlert attached to a custom workout step, with the system delivering the alert (watchOS 11 even added indoor-run pace alerts). Fully supported for third parties."
+   },
+   {
+    "name": "Heart-rate alerts (zone/range)",
+    "what": "Alert when HR exits a target zone or crosses high/low thresholds.",
+    "healthkitFeasible": "yes",
+    "note": "Replicable. Live HR from HKLiveWorkoutBuilder (HKQuantityTypeIdentifier.heartRate); app fires haptics on threshold, or use WorkoutKit HeartRateRangeAlert / HeartRateZoneAlert in a structured workout. No Firstbeat needed for a simple zone alert."
+   },
+   {
+    "name": "Power alerts (target/range)",
+    "what": "Alert when running/cycling power leaves a target range or threshold.",
+    "healthkitFeasible": "yes",
+    "note": "Replicable. WorkoutKit PowerRangeAlert / PowerThresholdAlert supports current and (watchOS 10.4+) average power alerts for running and cycling. Power source is Apple native runningPower or a paired BLE cycling power meter. Third-party supported."
+   },
+   {
+    "name": "Cadence alerts (target/range)",
+    "what": "Alert when running/cycling cadence leaves a target range.",
+    "healthkitFeasible": "yes",
+    "note": "Replicable via WorkoutKit CadenceRangeAlert / CadenceThresholdAlert, or app-side from CMPedometer/step data + haptics."
+   },
+   {
+    "name": "Virtual Partner / Virtual Pacer",
+    "what": "An on-screen avatar/competitor running at a set pace; shows live distance ahead/behind versus that target pace.",
+    "healthkitFeasible": "yes",
+    "note": "Replicable as pure app logic + UI: compare elapsed-time-vs-distance against a constant target pace and render an ahead/behind gap. Apple's own 'Pacer' workout does exactly this. No Garmin sensor or Firstbeat involved — it's arithmetic over pace and time. Garmin's branded avatar UI is the only non-portable part."
+   },
+   {
+    "name": "Structured workouts / interval workouts (warmup, work, recovery, repeats, cooldown with per-step targets)",
+    "what": "Pre-built workout executed live: stepped intervals with per-step duration/distance targets and pace/HR/power targets, auto-advance between steps, step alerts.",
+    "healthkitFeasible": "partial",
+    "note": "Largely replicable via WorkoutKit (iOS17/watchOS10+): CustomWorkout with warmup/work/recovery/cooldown steps, IntervalBlock repeats, and per-step PaceRange/HeartRate/Power/Cadence alerts; can be scheduled into Apple's Workout app. Two real gaps: (1) richest control runs through the SYSTEM Workout app, and a third-party app driving its OWN HKWorkoutSession must implement step sequencing/auto-advance manually; (2) developers report difficulty reading back the executed interval structure/splits from a system-recorded structured run. So feature exists but with less depth/flexibility than Garmin's workout engine."
+   },
+   {
+    "name": "Multisport (auto/manual sport transitions, e.g. triathlon swim-bike-run in one activity)",
+    "what": "Single recorded activity spanning multiple sports with transition timing; one combined file.",
+    "healthkitFeasible": "partial",
+    "note": "Apple supports Multisport natively (swim-bike-run with auto transitions) and WorkoutKit/HealthKit can represent multisport, but third-party control is limited: a custom app can chain multiple HKWorkoutSessions/activity types and stitch them, yet seamless AUTO transition detection between sports is a system/Workout-app feature not cleanly exposed for arbitrary third-party sport orders. Manual-transition multisport is achievable; Garmin-grade auto-transition + full per-leg data fields is harder."
+   },
+   {
+    "name": "Music controls during activity (play/pause/skip/volume)",
+    "what": "On-watch transport controls for music playing on the watch or phone while recording.",
+    "healthkitFeasible": "partial",
+    "note": "Limited for third parties. watchOS does not give third-party apps a general MusicKit transport API like iOS; programmatic control/MPMusicPlayerController is constrained on watchOS, and remote-command control of other apps' playback is restricted. The system 'Now Playing' surface handles transport, but a custom workout app embedding full play/pause/skip/volume for arbitrary players is not reliably available. Apple intends Now Playing (separate app/dock), not in-app, to own this."
+   }
+  ]
+ }
+]

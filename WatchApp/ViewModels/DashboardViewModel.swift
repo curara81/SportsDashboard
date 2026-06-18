@@ -1,6 +1,47 @@
 import Foundation
 import SwiftData
 import HealthKit
+import UserNotifications
+
+// MARK: - Local Notifications (recovery complete / rest reminders)
+
+enum NotificationManager {
+    static func requestAuthorization() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+    }
+
+    /// Schedule a "recovery complete" notification `hours` from now.
+    static func scheduleRecoveryComplete(hours: Int) {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ["recovery_complete"])
+        guard hours > 0 else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "회복 완료 🎯"
+        content.body = "충분히 회복됐습니다. 가벼운 운동을 시작해 보세요."
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(
+            timeInterval: TimeInterval(hours * 3600), repeats: false
+        )
+        center.add(UNNotificationRequest(identifier: "recovery_complete", content: content, trigger: trigger))
+    }
+
+    /// If the user hasn't worked out in `days` days, nudge them (checked on load).
+    static func scheduleRestNudgeIfNeeded(daysSinceLastWorkout: Int) {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ["rest_nudge"])
+        guard daysSinceLastWorkout >= 3 else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "오랜만이에요 👟"
+        content.body = "\(daysSinceLastWorkout)일째 휴식 중입니다. 가벼운 운동 어때요?"
+        content.sound = .default
+        // Fire tomorrow morning 9am-ish (12h out is simpler & robust).
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 12 * 3600, repeats: false)
+        center.add(UNNotificationRequest(identifier: "rest_nudge", content: content, trigger: trigger))
+    }
+}
 
 @MainActor
 final class DashboardViewModel: ObservableObject {
@@ -39,7 +80,14 @@ final class DashboardViewModel: ObservableObject {
     @Published var strideLength: Double?
     @Published var loadFocus: MetricsEngine.LoadFocus?
 
+    // Daily activity (today)
+    @Published var todaySteps: Double?
+    @Published var todayDistanceKm: Double?
+    @Published var todayActiveCalories: Double?
+    @Published var todayExerciseMinutes: Double?
+
     func authorize() async {
+        NotificationManager.requestAuthorization()
         do {
             try await hk.requestAuthorization()
         } catch {
@@ -61,6 +109,7 @@ final class DashboardViewModel: ObservableObject {
             async let bodyTask = hk.fetchBodyComposition(daysBack: 90)
             async let vo2Task = hk.fetchVO2max(daysBack: 90)
             async let sleepStagesTask = hk.fetchSleepStages()
+            async let activityTask = hk.fetchTodayActivity()
 
             let sleep = try await sleepTask
             let hrvValues = try await hrvTask
@@ -68,6 +117,12 @@ final class DashboardViewModel: ObservableObject {
             _ = try await bodyTask
             let vo2Values = try await vo2Task
             let stages = try await sleepStagesTask
+            let activity = try await activityTask
+
+            self.todaySteps = activity.steps
+            self.todayDistanceKm = activity.distanceKm
+            self.todayActiveCalories = activity.activeCalories
+            self.todayExerciseMinutes = activity.exerciseMinutes
 
             self.sleepHours = sleep
             self.latestHRV = hrvValues.last?.value
@@ -107,11 +162,21 @@ final class DashboardViewModel: ObservableObject {
 
             // Recovery Time
             if let lastWorkout = recentLoads.filter({ $0.trimp > 0 }).last {
-                self.recoveryTime = MetricsEngine.estimateRecoveryTime(
+                let rt = MetricsEngine.estimateRecoveryTime(
                     lastTrimp: lastWorkout.trimp,
                     currentTSB: lastWorkout.tsb,
                     hrvStatus: hrvStatus
                 )
+                self.recoveryTime = rt
+
+                // Schedule "recovery complete" notification from last workout's end.
+                let elapsed = Date().timeIntervalSince(lastWorkout.date) / 3600.0
+                let remaining = max(0, rt.hours - Int(elapsed))
+                NotificationManager.scheduleRecoveryComplete(hours: remaining)
+
+                // Rest nudge if it's been a while since the last workout.
+                let daysSince = Int(Date().timeIntervalSince(lastWorkout.date) / 86400.0)
+                NotificationManager.scheduleRestNudgeIfNeeded(daysSinceLastWorkout: daysSince)
             }
 
             // Fitness Age
@@ -301,36 +366,63 @@ final class DashboardViewModel: ObservableObject {
             let descriptor = FetchDescriptor<DailyTrainingLoad>(
                 sortBy: [SortDescriptor(\.date)]
             )
-            let allLoads = try context.fetch(descriptor)
-            self.recentLoads = allLoads
+            let workoutLoads = try context.fetch(descriptor)
 
-            var ctl = 0.0
-            var atl = 0.0
-            var acuteEWMA = 0.0
-            var chronicEWMA = 0.0
+            guard !workoutLoads.isEmpty else {
+                self.recentLoads = []
+                return
+            }
 
-            for load in allLoads {
+            // CTL/ATL must decay on REST days too, so iterate EVERY calendar day from
+            // the first workout to today — not just workout rows. Otherwise the curve
+            // jumps at each workout (the sawtooth) instead of smoothly rising/decaying.
+            let cal = Calendar.current
+            let firstDay = cal.startOfDay(for: workoutLoads.first!.date)
+            let today = cal.startOfDay(for: Date())
+
+            // Map workout day → its row (for trimp + back-writing CTL/ATL).
+            var rowByDay: [Date: DailyTrainingLoad] = [:]
+            for load in workoutLoads { rowByDay[cal.startOfDay(for: load.date)] = load }
+
+            // Build the full daily series for charting (one point per day).
+            var dailySeries: [DailyTrainingLoad] = []
+            var ctl = 0.0, atl = 0.0, acuteEWMA = 0.0, chronicEWMA = 0.0
+
+            var day = firstDay
+            while day <= today {
+                let row = rowByDay[day]
+                let todayLoad = row?.trimp ?? 0.0
+
                 let balance = MetricsEngine.updateCTLATL(
-                    previousCTL: ctl, previousATL: atl, todayLoad: load.trimp
+                    previousCTL: ctl, previousATL: atl, todayLoad: todayLoad
                 )
-                ctl = balance.ctl
-                atl = balance.atl
-                load.ctl = ctl
-                load.atl = atl
-                load.tsb = balance.tsb
+                ctl = balance.ctl; atl = balance.atl
 
                 let acwrResult = MetricsEngine.updateACWR(
-                    previousAcute: acuteEWMA, previousChronic: chronicEWMA, todayLoad: load.trimp
+                    previousAcute: acuteEWMA, previousChronic: chronicEWMA, todayLoad: todayLoad
                 )
-                acuteEWMA = acwrResult.acute
-                chronicEWMA = acwrResult.chronic
-                load.acwrAcute = acuteEWMA
-                load.acwrChronic = chronicEWMA
+                acuteEWMA = acwrResult.acute; chronicEWMA = acwrResult.chronic
+
+                if let row = row {
+                    // Persist the computed values onto the real workout row.
+                    row.ctl = ctl; row.atl = atl; row.tsb = balance.tsb
+                    row.acwrAcute = acuteEWMA; row.acwrChronic = chronicEWMA
+                    dailySeries.append(row)
+                } else {
+                    // Rest day: transient point for the chart (not persisted).
+                    let rest = DailyTrainingLoad(date: day, trimp: 0, durationMinutes: 0)
+                    rest.ctl = ctl; rest.atl = atl; rest.tsb = balance.tsb
+                    rest.acwrAcute = acuteEWMA; rest.acwrChronic = chronicEWMA
+                    dailySeries.append(rest)
+                }
+
+                day = cal.date(byAdding: .day, value: 1, to: day)!
             }
 
             try context.save()
+            self.recentLoads = dailySeries
 
-            if let last = allLoads.last {
+            if let last = dailySeries.last {
                 self.trainingBalance = MetricsEngine.TrainingBalance(
                     ctl: last.ctl, atl: last.atl, tsb: last.tsb,
                     label: last.tsb > 10 ? "최상 컨디션" : last.tsb >= -10 ? "보통" : "피로 누적"

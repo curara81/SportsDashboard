@@ -4,6 +4,8 @@ struct RacePredictionView: View {
     @State private var recentDistance: Double = 5.0
     @State private var recentMinutes: Int = 25
     @State private var recentSeconds: Int = 0
+    @State private var autoFilled = false
+    @State private var didLoad = false
 
     private let distances: [(name: String, km: Double)] = [
         ("5K", 5.0), ("10K", 10.0), ("하프", 21.0975), ("풀", 42.195)
@@ -19,11 +21,31 @@ struct RacePredictionView: View {
                 Text("레이스 예측")
                     .font(.system(size: 17, weight: .bold))
 
+                if autoFilled {
+                    Text("최근 베스트 기록 자동 적용됨")
+                        .font(.system(size: 9))
+                        .foregroundStyle(Color(red: 0.3, green: 0.85, blue: 0.45))
+                }
+
                 inputCard
                 resultCards
                 paceCard
             }
             .padding(.horizontal, 6)
+        }
+        .task {
+            guard !didLoad else { return }
+            didLoad = true
+            if let best = try? await HealthKitManager.shared.fetchBestRecentRun() {
+                // Snap distance to the nearest standard bucket for the picker.
+                let snapped = distances.min(by: { abs($0.km - best.distanceKm) < abs($1.km - best.distanceKm) })?.km ?? 5.0
+                // Scale the time to the snapped distance via Riegel so the picker stays consistent.
+                let scaledTime = MetricsEngine.predictRaceTime(knownDistance: best.distanceKm, knownTime: best.time, targetDistance: snapped)
+                recentDistance = snapped
+                recentMinutes = Int(scaledTime) / 60
+                recentSeconds = Int(scaledTime) % 60
+                autoFilled = true
+            }
         }
     }
 

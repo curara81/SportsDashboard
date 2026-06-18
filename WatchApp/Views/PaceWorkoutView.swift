@@ -1,8 +1,10 @@
 #if os(watchOS)
 import SwiftUI
+import SwiftData
 
 struct PaceWorkoutView: View {
     @StateObject private var manager = WorkoutManager()
+    @Query private var profiles: [UserProfile]
 
     let targetDistance: String     // "5K", "10K", etc.
     let targetDistanceKm: Double
@@ -12,9 +14,21 @@ struct PaceWorkoutView: View {
         targetTimeSeconds / targetDistanceKm
     }
 
+    private var zoneLowerBounds: [Double] {
+        (profiles.first ?? UserProfile()).zones.map(\.lower)
+    }
+
     var body: some View {
         Group {
-            if manager.isActive {
+            if manager.isCountingDown {
+                CountdownView(
+                    value: manager.countdownValue,
+                    color: Color(red: 0.3, green: 0.85, blue: 0.45),
+                    onCancel: { manager.cancelCountdown() }
+                )
+            } else if manager.isShowingSummary {
+                WorkoutSummaryView(manager: manager)
+            } else if manager.isActive {
                 activeWorkoutView
             } else {
                 preWorkoutView
@@ -79,7 +93,7 @@ struct PaceWorkoutView: View {
                 }
 
                 Button {
-                    manager.startWorkout(type: .running, targetPace: targetPacePerKm)
+                    manager.startWorkout(type: .running, targetPace: targetPacePerKm, zoneLowerBounds: zoneLowerBounds)
                 } label: {
                     HStack {
                         Image(systemName: "play.fill")
