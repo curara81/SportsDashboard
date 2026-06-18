@@ -43,13 +43,13 @@ watch app installs from Xcode (scheme **SportsDashboard Watch App** → your App
 - ⬜ ClimbPro (pre-segment loaded route elevation into climbs; live remaining grade/ascent)
 - ⬜ Route Roulette (generate a target-distance loop from current location, MapKit)
 
-## ⬜ Phase 4 — intelligence
-- Target Load (daily how-much-to-train band) + deterministic Daily Run recommendation
-- VDOT-based race prediction (blend VO2max + load) — upgrade Riegel
-- Cardio Fitness percentile (VO2max → age/sex tier)
-- Burner: live fat/carb substrate split from intensity
-- Cardiac decoupling live (extend existing cardiac-drift) = aerobic durability
-- Form Drift Detector (fatigue from running-dynamics decay + cue)
+## 🔨 Phase 4 — intelligence
+- ✅ Burner: live fat/carb substrate split from intensity (data screen)
+- ✅ Cardio Fitness level (VO2max → age/sex tier, on dashboard) + tests
+- ⬜ Target Load (daily how-much-to-train band) + deterministic Daily Run recommendation
+- ⬜ VDOT-based race prediction (blend VO2max + load) — upgrade Riegel
+- ⬜ Cardiac decoupling live (extend existing cardiac-drift) = aerobic durability
+- ⬜ Form Drift Detector (fatigue from running-dynamics decay + cue)
 
 ## ⬜ Phase 5 — safety & extras
 - Safety Beacon: Action Button + 86 dB siren + Find My live share + dead-man timer
