@@ -59,88 +59,79 @@ struct DashboardView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    headerSection
+            dashboardPages
+                .background(DS.pageBg)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink {
+                            SettingsView()
+                        } label: {
+                            Image(systemName: "gearshape.fill")
+                                .font(.system(size: 12))
+                                .foregroundStyle(DS.dimText)
+                        }
+                    }
+                }
+                .task {
+                    await vm.authorize()
+                    await vm.loadMorningReport(context: modelContext)
+                }
+        }
+    }
 
-                    // 운동 시작 — 최상단 고정 (운동 앱이니 1순위)
+    /// Garmin-style one-metric-per-screen, Crown-paged (replaces the long scroll list).
+    private var dashboardPages: some View {
+        TabView {
+            // Hub: start workout + today's activity
+            ScrollView {
+                VStack(spacing: 10) {
+                    headerSection
                     #if os(watchOS)
                     workoutStartButton
                     #endif
-
-                    // 오늘의 활동 (걸음/거리/칼로리/운동시간)
                     dailyActivityCard
-
-                    if vm.isLoading {
-                        ProgressView()
-                            .frame(maxWidth: .infinity, minHeight: 100)
-                    } else if let error = vm.errorMessage {
-                        Text(error)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .padding()
-                    } else {
-                        readinessCard
-
-                        NavigationLink {
-                            WeeklyTrendView(loads: vm.recentLoads)
-                        } label: {
-                            trainingBalanceCard
-                        }
-                        .buttonStyle(.plain)
-
-                        acwrCard
-
-                        NavigationLink {
-                            HRZonesView(profile: vm.userProfile ?? UserProfile())
-                        } label: {
-                            hrvStatusCard
-                        }
-                        .buttonStyle(.plain)
-
-                        trainingStatusCard
-                        vo2maxCard
-                        sleepCard
-                        sleepStagesCard
-                        bodyCompositionCard
-
-                        NavigationLink {
-                            TrainingHistoryView(loads: vm.recentLoads)
-                        } label: {
-                            rhrCard
-                        }
-                        .buttonStyle(.plain)
-
-                        hrvChartCard
-                        runningDynamicsCard
-                        loadFocusCard
-                        recoveryCard
-                        quickLinks
-                    }
-                    Spacer(minLength: 8)
                 }
                 .padding(.horizontal, 6)
             }
-            .background(DS.pageBg)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        SettingsView()
-                    } label: {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 12))
-                            .foregroundStyle(DS.dimText)
-                    }
-                }
+
+            if vm.isLoading {
+                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let error = vm.errorMessage {
+                Text(error).font(.caption2).foregroundStyle(.secondary).padding()
+            } else {
+                dashPage { readinessCard }
+                NavigationLink { WeeklyTrendView(loads: vm.recentLoads) } label: { dashPage { trainingBalanceCard } }
+                    .buttonStyle(.plain)
+                dashPage { acwrCard }
+                NavigationLink { HRZonesView(profile: vm.userProfile ?? UserProfile()) } label: { dashPage { hrvStatusCard } }
+                    .buttonStyle(.plain)
+                dashPage { trainingStatusCard }
+                dashPage { vo2maxCard }
+                dashPage { recoveryCard }
+                dashPage { sleepCard }
+                dashPage { sleepStagesCard }
+                NavigationLink { TrainingHistoryView(loads: vm.recentLoads) } label: { dashPage { rhrCard } }
+                    .buttonStyle(.plain)
+                dashPage { hrvChartCard }
+                dashPage { runningDynamicsCard }
+                dashPage { loadFocusCard }
+                dashPage { bodyCompositionCard }
+                dashPage { quickLinks }
             }
-            .task {
-                await vm.authorize()
-                await vm.loadMorningReport(context: modelContext)
-            }
-            .refreshable {
-                await vm.loadMorningReport(context: modelContext)
-            }
+        }
+        #if os(watchOS)
+        .tabViewStyle(.verticalPage)
+        #endif
+    }
+
+    /// One dashboard card centered on its own page (scrolls if taller than the screen).
+    private func dashPage<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        ScrollView {
+            VStack { content() }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 6)
+                .padding(.top, 8)
         }
     }
 
