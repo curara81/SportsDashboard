@@ -55,7 +55,7 @@ watch app installs from Xcode (scheme **SportsDashboard Watch App** → your App
 - ✅ Hydration/fuel coach (timed Korean voice reminder; adaptive sweat-rate = later)
 - ✅ Shoe mileage tracker + retirement reminder
 - ✅ Korean voice for ALL key real-time alerts (pace, auto-pause, intervals, form, km)
-- ⬜ Auto-highlights reel on the flyover (fastest km, PR, HR peak) — iOS, feasible, next
+- ✅ Auto-highlights on the flyover (fastest km + biggest climb markers; PR/HR-peak later)
 - ⚠️ Safety Beacon — mostly NOT possible: no public API for the Ultra 86 dB siren,
   Find My live share, programmatic Action Button, or sending messages from watchOS.
   Feasible subset = loud in-app alarm sound only. Deferred.
@@ -69,6 +69,12 @@ watch app installs from Xcode (scheme **SportsDashboard Watch App** → your App
 ## UI
 - ✅ In-workout Crown data screens (one metric/screen, big text)
 - ✅ Dashboard Crown-paged (one metric/screen, replaces long scroll)
+
+## 💡 Novel ideas backlog (feasible, not yet built)
+- Negative-Split Autopilot (live goal re-plan + realistic fallback target)
+- Ghost Lane (race a past effort as a moving dot on the live map, dual-band GPS)
+- Breath-locked cadence / Galloway run-walk coach (haptic metronome)
+- Treadmill auto-calibration (per-pace stride model that learns from GPS runs)
 
 ## 🔒 Premium / needs accessory
 - ZoneSense (DDFA real-time metabolic zones) — needs BLE chest strap (Polar H10) via CoreBluetooth
