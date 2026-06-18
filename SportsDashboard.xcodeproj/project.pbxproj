@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0130584F6CA3C97EC3267B31 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BE93B38EECA80F815893910 /* UserProfile.swift */; };
 		023F37D0E1C81E24CD50341A /* HRZonesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A7B5CB9A5C5FA603393298 /* HRZonesView.swift */; };
+		0330AFC0584821619710DD2E /* Shoe.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF368D1AA3CCBDE632B7361 /* Shoe.swift */; };
 		0D50AC940E4F8B0E74758BAB /* RunningDynamicsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B2371AB742E74FE3F0E803B /* RunningDynamicsView.swift */; };
 		0E2263994D46E88B91351E0D /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C42844A9FD850D06198ABDBB /* HealthKit.framework */; };
 		113433BE19EB0182C7B57377 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6340F808AB4BE5F597B0E8F /* DashboardView.swift */; };
@@ -28,8 +29,10 @@
 		43A6E669E91C34BD0104FE80 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 49E59909A0FBFEDC9310098B /* Assets.xcassets */; };
 		46F47A3E39B7DFE6375AB969 /* HRZonesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A7B5CB9A5C5FA603393298 /* HRZonesView.swift */; };
 		4747B7F4A5E02E3D0CD957FB /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 63EFD148B89752B01CC028EB /* CoreLocation.framework */; };
+		4754B962B8C7E60F0CB977D6 /* Shoe.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEF368D1AA3CCBDE632B7361 /* Shoe.swift */; };
 		4862D5C5B0A935260C688D4E /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BE93B38EECA80F815893910 /* UserProfile.swift */; };
 		4A5BB785C944844B7FA3B979 /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81BE111D2D5EFFA7D13271BE /* WatchConnectivity.framework */; };
+		4BE56FF6460242661EBA47FD /* ShoesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6023EA860ACCC48C74E39C0D /* ShoesView.swift */; };
 		4EAF2629806BBD2B8230CEB7 /* BodyCompositionRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = C075346E22BE601D2B79C383 /* BodyCompositionRecord.swift */; };
 		51ACA5049E4FC98C122967B0 /* DailyTrainingLoad.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C287B26A201D46CE8330FC /* DailyTrainingLoad.swift */; };
 		5C76E3D8DA847B44FF06252D /* iOSDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC4D2C56D1B2C26C59E99ECE /* iOSDashboardView.swift */; };
@@ -86,6 +89,7 @@
 		4D95B363F8249B6ABE146E30 /* TrainingHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingHistoryView.swift; sourceTree = "<group>"; };
 		55C58E852EA9B9A422184218 /* SportsDashboard.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SportsDashboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5AAEFFA9C54FC50E3F4C7214 /* SportsDashboard Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SportsDashboard Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6023EA860ACCC48C74E39C0D /* ShoesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShoesView.swift; sourceTree = "<group>"; };
 		63EFD148B89752B01CC028EB /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		6D1449F2FCBC9AC3B2ACA523 /* Charts.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Charts.framework; path = System/Library/Frameworks/Charts.framework; sourceTree = SDKROOT; };
 		6F75F2448069880E7B41520A /* DailyReadiness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyReadiness.swift; sourceTree = "<group>"; };
@@ -107,6 +111,7 @@
 		ADAB89F84D5E76A35622CEFD /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
 		B684ABF4E935AD58DE085304 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		BDCE7362D8C70F2A3494E452 /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitManager.swift; sourceTree = "<group>"; };
+		BEF368D1AA3CCBDE632B7361 /* Shoe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shoe.swift; sourceTree = "<group>"; };
 		C075346E22BE601D2B79C383 /* BodyCompositionRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyCompositionRecord.swift; sourceTree = "<group>"; };
 		C350E992DCD59B307518B629 /* FlyoverReplayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlyoverReplayView.swift; sourceTree = "<group>"; };
 		C42844A9FD850D06198ABDBB /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
@@ -202,6 +207,7 @@
 				C8EAEC2EED3E55297E5534CD /* RacePredictionView.swift */,
 				8B2371AB742E74FE3F0E803B /* RunningDynamicsView.swift */,
 				FE7EE8AC9A0C7FD61514FCA3 /* SettingsView.swift */,
+				6023EA860ACCC48C74E39C0D /* ShoesView.swift */,
 				4D95B363F8249B6ABE146E30 /* TrainingHistoryView.swift */,
 				9D351CAEF42F5FDB32BF780C /* WeeklyTrendView.swift */,
 				A69186A5CDDA914558D144C0 /* WorkoutRouteView.swift */,
@@ -248,6 +254,7 @@
 				6F75F2448069880E7B41520A /* DailyReadiness.swift */,
 				F4C287B26A201D46CE8330FC /* DailyTrainingLoad.swift */,
 				429066673D0F8AC0D96FB335 /* DatedValue.swift */,
+				BEF368D1AA3CCBDE632B7361 /* Shoe.swift */,
 				8BE93B38EECA80F815893910 /* UserProfile.swift */,
 			);
 			path = Models;
@@ -464,6 +471,8 @@
 				402A040AA697E65E6A6A6688 /* RunningDynamicsView.swift in Sources */,
 				E0BC412E26E85B0ED4C9ED80 /* SettingsView.swift in Sources */,
 				8ADDC0277E26089A769C0FB7 /* SharedComponents.swift in Sources */,
+				0330AFC0584821619710DD2E /* Shoe.swift in Sources */,
+				4BE56FF6460242661EBA47FD /* ShoesView.swift in Sources */,
 				D66D019B696FAEA1175893E5 /* SportsDashboardApp.swift in Sources */,
 				CE15F5826187D487184ACCAF /* SyncManager.swift in Sources */,
 				28693B4F82CA1CB70734B8C5 /* TrainingHistoryView.swift in Sources */,
@@ -491,6 +500,7 @@
 				210A0FF15F042424615BB5CB /* RacePredictionView.swift in Sources */,
 				0D50AC940E4F8B0E74758BAB /* RunningDynamicsView.swift in Sources */,
 				C703488F30853EBD9E859404 /* SharedComponents.swift in Sources */,
+				4754B962B8C7E60F0CB977D6 /* Shoe.swift in Sources */,
 				611186E599E3E2C9EB220C31 /* SportsDashboardiOSApp.swift in Sources */,
 				D86FBA8662C70CC48527BE92 /* SyncManager.swift in Sources */,
 				741235D9D2347EE2D99B56FB /* TrainingHistoryView.swift in Sources */,

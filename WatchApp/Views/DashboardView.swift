@@ -902,6 +902,24 @@ struct DashboardView: View {
                 }
             }
             .buttonStyle(.plain)
+
+            NavigationLink {
+                ShoesView()
+            } label: {
+                CardView {
+                    HStack {
+                        Image(systemName: "shoe.2")
+                            .foregroundStyle(DS.orange)
+                        Text("신발")
+                            .font(.system(size: 13, weight: .semibold))
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10))
+                            .foregroundStyle(DS.dimText)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
         }
     }
 

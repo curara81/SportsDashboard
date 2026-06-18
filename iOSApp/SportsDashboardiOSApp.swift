@@ -17,7 +17,8 @@ struct SportsDashboardiOSApp: App {
             DailyTrainingLoad.self,
             DailyReadiness.self,
             BodyCompositionRecord.self,
-            UserProfile.self
+            UserProfile.self,
+            Shoe.self
         ])
     }
 
