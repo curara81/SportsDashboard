@@ -393,7 +393,8 @@ struct DashboardView: View {
 
                     if let d = vm.sleepDeep, let r = vm.sleepREM {
                         let sc = MetricsEngine.sleepScore(
-                            asleepHours: hours, deepHours: d, remHours: r, awakeHours: vm.sleepAwake ?? 0)
+                            asleepHours: hours, deepHours: d, remHours: r, awakeHours: vm.sleepAwake ?? 0,
+                            inBedHours: vm.sleepInBedHours, sleepingHR: vm.sleepingHR, restingHR: vm.restingHR)
                         let scColor: Color = sc.score >= 70 ? DS.green : (sc.score >= 55 ? DS.orange : DS.red)
                         HStack(spacing: 6) {
                             Text("수면 점수").font(.system(size: 9)).foregroundStyle(DS.dimText)

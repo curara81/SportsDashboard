@@ -129,6 +129,40 @@ final class HealthKitManager: ObservableObject {
         return hours
     }
 
+    /// Last night's in-bed hours + mean sleeping heart rate (for sleep-score efficiency
+    /// and HR-dip terms). inBed comes from AutoSleep/Apple sleep records; sleeping HR is
+    /// the mean heart rate across the asleep window.
+    func fetchSleepExtras() async -> (inBedHours: Double, sleepingHR: Double?) {
+        let sleepType = HKCategoryType(.sleepAnalysis)
+        let cal = Calendar.current
+        let now = Date()
+        guard let start = cal.date(bySettingHour: 18, minute: 0, second: 0,
+                                   of: cal.date(byAdding: .day, value: -1, to: now)!) else { return (0, nil) }
+        let pred = HKQuery.predicateForSamples(withStart: start, end: now, options: [])
+        let samples = (try? await queryCategorySamples(type: sleepType, predicate: pred)) ?? []
+
+        let asleepVals: Set<Int> = [
+            HKCategoryValueSleepAnalysis.asleepCore.rawValue,
+            HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
+            HKCategoryValueSleepAnalysis.asleepREM.rawValue,
+            HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue
+        ]
+        let inBedSecs = samples
+            .filter { $0.value == HKCategoryValueSleepAnalysis.inBed.rawValue }
+            .reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) }
+
+        let asleep = samples.filter { asleepVals.contains($0.value) }
+        var sleepingHR: Double?
+        if let wStart = asleep.map(\.startDate).min(), let wEnd = asleep.map(\.endDate).max(), wEnd > wStart {
+            let hrPred = HKQuery.predicateForSamples(withStart: wStart, end: wEnd, options: [])
+            if let hr = try? await queryQuantitySamples(type: HKQuantityType(.heartRate), predicate: hrPred), !hr.isEmpty {
+                let unit = HKUnit.count().unitDivided(by: .minute())
+                sleepingHR = hr.map { $0.quantity.doubleValue(for: unit) }.reduce(0, +) / Double(hr.count)
+            }
+        }
+        return (inBedSecs / 3600.0, sleepingHR)
+    }
+
     /// Asleep hours per night for the last `nights` nights (oldest→newest), bucketed
     /// by wake day. For the Sleep Bank (sleep-debt) calculation.
     func fetchNightlySleepHours(nights: Int = 7) async -> [Double] {

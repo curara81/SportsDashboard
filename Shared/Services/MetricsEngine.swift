@@ -599,18 +599,41 @@ struct MetricsEngine {
 
     // MARK: - Sleep Score (0–100 from HealthKit sleep)
 
-    /// Composite 0–100 sleep score: duration (45%) + restorative deep+REM share (30%)
-    /// + continuity/efficiency (25%). Works from data AutoSleep / Apple Watch write to Health.
+    /// Composite 0–100 sleep score from HealthKit data (the same raw sleep AutoSleep
+    /// writes). Weights: duration 45% + efficiency 25% + restoration 20% + HR-dip 10%.
+    /// Efficiency prefers asleep/inBed (AutoSleep writes inBed); falls back to
+    /// asleep/(asleep+awake). HR-dip term is dropped (weights renormalized) when
+    /// sleeping/resting HR aren't available.
     static func sleepScore(asleepHours: Double, deepHours: Double, remHours: Double,
-                           awakeHours: Double, targetHours: Double = 8) -> (score: Int, label: String) {
+                           awakeHours: Double, inBedHours: Double? = nil,
+                           sleepingHR: Double? = nil, restingHR: Double? = nil,
+                           targetHours: Double = 8) -> (score: Int, label: String) {
         guard asleepHours > 0 else { return (0, "데이터 없음") }
-        let duration = min(asleepHours / targetHours, 1.0)
-        // Restorative: deep+REM ideally ~40% of asleep time.
-        let restorative = min(((deepHours + remHours) / asleepHours) / 0.40, 1.0)
-        // Continuity: efficiency = asleep / (asleep + awake); 70% → 0, 95%+ → 1.
-        let efficiency = awakeHours > 0 ? asleepHours / (asleepHours + awakeHours) : 1.0
-        let continuity = min(max((efficiency - 0.70) / 0.25, 0), 1.0)
-        let score = Int(((duration * 0.45 + restorative * 0.30 + continuity * 0.25) * 100).rounded())
+
+        var parts: [(w: Double, v: Double)] = []
+
+        // Duration vs need (45%)
+        parts.append((0.45, min(asleepHours / targetHours, 1.0)))
+
+        // Efficiency (25%): asleep/inBed if available, else asleep/(asleep+awake). 70%→0, 95%→1.
+        let efficiency: Double
+        if let ib = inBedHours, ib > 0 {
+            efficiency = asleepHours / ib
+        } else {
+            efficiency = awakeHours > 0 ? asleepHours / (asleepHours + awakeHours) : 1.0
+        }
+        parts.append((0.25, min(max((efficiency - 0.70) / 0.25, 0), 1.0)))
+
+        // Restoration (20%): deep+REM ≈ 40% of asleep is ideal.
+        parts.append((0.20, min(((deepHours + remHours) / asleepHours) / 0.40, 1.0)))
+
+        // HR dip (10%): sleeping HR ~15% below resting = full marks.
+        if let shr = sleepingHR, let rhr = restingHR, rhr > 0 {
+            parts.append((0.10, min(max(((rhr - shr) / rhr) / 0.15, 0), 1.0)))
+        }
+
+        let totalW = parts.reduce(0) { $0 + $1.w }
+        let score = Int((parts.reduce(0) { $0 + $1.w * $1.v } / totalW * 100).rounded())
         let label: String
         switch score {
         case 85...: label = "매우 좋음"

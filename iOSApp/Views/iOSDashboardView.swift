@@ -280,10 +280,26 @@ struct iOSDashboardView: View {
                             Text(String(format: "%.1f시간", hours))
                                 .font(.title2.bold())
                             Spacer()
-                            let pct = min(hours / 8.0, 1.0)
-                            Text("\(Int(pct * 100))%")
-                                .font(.headline)
-                                .foregroundStyle(pct >= 0.875 ? .green : pct >= 0.75 ? .blue : .orange)
+                            if let d = vm.sleepDeep, let r = vm.sleepREM {
+                                let sc = MetricsEngine.sleepScore(
+                                    asleepHours: hours, deepHours: d, remHours: r, awakeHours: vm.sleepAwake ?? 0,
+                                    inBedHours: vm.sleepInBedHours, sleepingHR: vm.sleepingHR, restingHR: vm.restingHR)
+                                VStack(alignment: .trailing, spacing: 0) {
+                                    Text("\(sc.score)점")
+                                        .font(.headline.bold())
+                                        .foregroundStyle(sc.score >= 70 ? .green : sc.score >= 55 ? .orange : .red)
+                                    Text(sc.label).font(.caption2).foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                        if let bank = vm.sleepBank {
+                            HStack {
+                                Text("수면 부채(7일)").font(.caption).foregroundStyle(.secondary)
+                                Spacer()
+                                Text(String(format: "%@%.1fh", bank >= 0 ? "+" : "−", abs(bank)))
+                                    .font(.subheadline.bold())
+                                    .foregroundStyle(bank >= 0 ? .green : .orange)
+                            }
                         }
 
                         if let core = vm.sleepCore, let deep = vm.sleepDeep, let rem = vm.sleepREM {

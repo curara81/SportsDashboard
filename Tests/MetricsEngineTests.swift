@@ -198,6 +198,19 @@ final class MetricsEngineTests: XCTestCase {
         XCTAssertEqual(MetricsEngine.sleepScore(asleepHours: 0, deepHours: 0, remHours: 0, awakeHours: 0).label, "데이터 없음")
     }
 
+    func testSleepScoreWithInBedAndHRDip() {
+        // 8h asleep / 8.5h in bed (~94% eff), good stages, strong HR dip → high
+        let s = MetricsEngine.sleepScore(asleepHours: 8, deepHours: 1.2, remHours: 1.8, awakeHours: 0.3,
+                                         inBedHours: 8.5, sleepingHR: 50, restingHR: 60)
+        XCTAssertGreaterThan(s.score, 80)
+        // Adding a good HR dip never lowers the score vs the renormalized no-dip case
+        let withDip = MetricsEngine.sleepScore(asleepHours: 7, deepHours: 1, remHours: 1.3, awakeHours: 0.4,
+                                               inBedHours: 7.5, sleepingHR: 48, restingHR: 60).score
+        let noDip = MetricsEngine.sleepScore(asleepHours: 7, deepHours: 1, remHours: 1.3, awakeHours: 0.4,
+                                             inBedHours: 7.5).score
+        XCTAssertGreaterThanOrEqual(withDip, noDip)
+    }
+
     func testSleepBank() {
         // 7 nights of 7h vs 8h target → -7h debt
         XCTAssertEqual(MetricsEngine.sleepBank(nightlyHours: Array(repeating: 7, count: 7)), -7, accuracy: 0.001)
