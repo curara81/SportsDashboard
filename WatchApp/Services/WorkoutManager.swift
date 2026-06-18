@@ -120,6 +120,7 @@ final class WorkoutManager: NSObject, ObservableObject {
     // and resumes without jumping by the paused gap).
     private var totalPausedDuration: TimeInterval = 0
     private var pauseStartedAt: Date?
+    private var nextFuelAt: TimeInterval = 0     // next hydration reminder (elapsed s)
 
     // MARK: - Workout Type
 
@@ -165,6 +166,7 @@ final class WorkoutManager: NSObject, ObservableObject {
     var paceToleranceSeconds: Double = 15
     var targetCadence: Double = 180                // spm, cadence-coach target (default)
     var voiceAnnouncementsEnabled = true           // spoken km splits
+    var fuelIntervalMinutes: Double = 20           // hydration/fuel reminder interval (0 = off)
 
     var isFreeMode: Bool { targetPacePerKm <= 0 }
 
@@ -357,6 +359,7 @@ final class WorkoutManager: NSObject, ObservableObject {
         isPaused = false
         startTimer()
         playHaptic(0) // start
+        nextFuelAt = fuelIntervalMinutes > 0 ? fuelIntervalMinutes * 60 : 0
         if activePlan != nil { beginPlanStep(0) }
 
         // GPS for outdoor sports (run/walk/cycle all outdoor here).
@@ -750,6 +753,13 @@ final class WorkoutManager: NSObject, ObservableObject {
             }
         }
 
+        // Hydration / fuel reminder (timed)
+        if fuelIntervalMinutes > 0, nextFuelAt > 0, elapsedSeconds >= nextFuelAt {
+            playHaptic(3)
+            speak("수분을 보충하세요")
+            nextFuelAt += fuelIntervalMinutes * 60
+        }
+
         // Structured interval plan: advance step when its goal is met
         advancePlanIfNeeded()
 
@@ -846,6 +856,7 @@ final class WorkoutManager: NSObject, ObservableObject {
         isAutoPaused = false
         totalPausedDuration = 0
         pauseStartedAt = nil
+        nextFuelAt = 0
         activePlan = nil
         planStepIndex = -1
         planStepLabel = ""
