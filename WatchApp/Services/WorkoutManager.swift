@@ -215,10 +215,9 @@ final class WorkoutManager: NSObject, ObservableObject {
 
     // MARK: - Voice announcements (Korean km splits)
 
-    /// Speaks e.g. "1킬로미터. 현재 페이스 5분 30초. 평균 페이스 5분 30초."
-    private func announceKm(_ km: Int, splitPace: Double, avgPace: Double) {
-        guard voiceAnnouncementsEnabled, splitPace > 0 else { return }
-        let text = "\(km)킬로미터. 현재 페이스 \(paceKorean(splitPace)). 평균 페이스 \(paceKorean(avgPace))."
+    /// Speaks any Korean cue (ducks music). Gated by voiceAnnouncementsEnabled.
+    private func speak(_ text: String) {
+        guard voiceAnnouncementsEnabled else { return }
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(.playback, mode: .default, options: [.duckOthers])
         try? session.setActive(true)
@@ -226,6 +225,12 @@ final class WorkoutManager: NSObject, ObservableObject {
         utterance.voice = AVSpeechSynthesisVoice(language: "ko-KR")
         utterance.rate = 0.5
         speechSynth.speak(utterance)
+    }
+
+    /// Speaks e.g. "1킬로미터. 현재 페이스 5분 30초. 평균 페이스 5분 30초."
+    private func announceKm(_ km: Int, splitPace: Double, avgPace: Double) {
+        guard splitPace > 0 else { return }
+        speak("\(km)킬로미터. 현재 페이스 \(paceKorean(splitPace)). 평균 페이스 \(paceKorean(avgPace)).")
     }
 
     private func paceKorean(_ secPerKm: Double) -> String {
@@ -576,6 +581,7 @@ final class WorkoutManager: NSObject, ObservableObject {
             planStepLabel = "운동 완료"
             planStepDetail = "모든 구간 완료"
             playHaptic(2) // success
+            speak("운동 완료")
             return
         }
         planStepIndex = i
@@ -583,6 +589,7 @@ final class WorkoutManager: NSObject, ObservableObject {
         planStepStartTime = elapsedSeconds
         planStepLabel = plan.steps[i].kind.label
         playHaptic(3) // step transition
+        speak("\(plan.steps[i].kind.label) 시작")
     }
 
     private func advancePlanIfNeeded() {
@@ -618,12 +625,14 @@ final class WorkoutManager: NSObject, ObservableObject {
                     isAutoPaused = true        // freezes the timer (display only; GPS stays on)
                     beginPauseAccounting()
                     playHaptic(1)
+                    speak("일시정지")
                 }
             } else {
                 if isAutoPaused {
                     isAutoPaused = false
                     endPauseAccountingIfNeeded()
                     playHaptic(0)
+                    speak("재개")
                 }
                 lowSpeedSeconds = 0
             }
@@ -733,6 +742,7 @@ final class WorkoutManager: NSObject, ObservableObject {
                     if Date().timeIntervalSince(lastHapticTime) > hapticCooldown {
                         lastHapticTime = Date()
                         playHaptic(5) // directionDown — form fading, shorten stride / lift cadence
+                        speak("자세가 흐트러집니다. 보폭을 줄이세요")
                     }
                 } else if formDrift < 5 {
                     formCueGiven = false
@@ -764,8 +774,10 @@ final class WorkoutManager: NSObject, ObservableObject {
                 switch paceStatus {
                 case .tooFast:
                     playHaptic(4) // directionUp
+                    speak("페이스가 빠릅니다")
                 case .tooSlow:
                     playHaptic(5) // directionDown
+                    speak("페이스가 느립니다")
                 default: break
                 }
             }
