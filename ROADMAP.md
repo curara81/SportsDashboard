@@ -16,11 +16,13 @@ watch app installs from Xcode (scheme **SportsDashboard Watch App** → your App
 - Live finish-time projection (5K/10K/half/full)
 - Cadence coach (target-relative color)
 
-## 🔨 Phase 2 — pacing & guidance (current)
-- ✅ Virtual Partner · ✅ GAP · ✅ finish projection · ✅ cadence coach
-- ⬜ **Structured / interval workouts** ← RESUME HERE (see below)
-- ⬜ Dual-target cues (pace + HR range, directional haptics, priority rule)
+## 🔨 Phase 2 — pacing & guidance (nearly done)
+- ✅ Virtual Partner · ✅ GAP · ✅ finish projection · ✅ cadence coach (visual)
+- ✅ Structured / interval workouts (presets + auto-advancing steps + step banner)
+- ⬜ **Dual-target cues (pace + HR range, directional haptics, priority rule)** ← RESUME HERE
 - ⬜ Cadence-coach haptic nudge (visual color already done)
+- ⬜ Per-step pace/HR targets for interval steps (IntervalStep.targetPace exists; wire alerts)
+- ⬜ On-watch interval builder UI (presets exist; add custom builder)
 
 ## ⬜ Phase 3 — navigation
 - GPX course load + turn-by-turn + off-route haptic alert (cross-track distance vs polyline)
