@@ -50,6 +50,12 @@ final class WorkoutManager: NSObject, ObservableObject {
     // Cadence
     @Published var currentCadence: Double = 0       // steps per minute
 
+    // Running dynamics (HealthKit auto-collects these on outdoor runs, watchOS 9+)
+    @Published var currentRunningPower: Double = 0        // watts
+    @Published var currentStrideLength: Double = 0        // meters
+    @Published var currentVerticalOscillation: Double = 0 // cm
+    @Published var currentGroundContactTime: Double = 0   // ms
+
     // Laps (auto per-km + manual)
     @Published var laps: [Lap] = []
     @Published var currentLapDistance: Double = 0   // meters into current lap
@@ -214,6 +220,10 @@ final class WorkoutManager: NSObject, ObservableObject {
             HKQuantityType(.distanceCycling),
             HKQuantityType(.activeEnergyBurned),
             HKQuantityType(.runningSpeed),
+            HKQuantityType(.runningPower),
+            HKQuantityType(.runningStrideLength),
+            HKQuantityType(.runningVerticalOscillation),
+            HKQuantityType(.runningGroundContactTime),
             HKQuantityType(.stepCount),
             HKObjectType.workoutType()
         ]
@@ -293,10 +303,24 @@ final class WorkoutManager: NSObject, ObservableObject {
             session?.delegate = self
             builder?.delegate = self
 
-            builder?.dataSource = HKLiveWorkoutDataSource(
+            let dataSource = HKLiveWorkoutDataSource(
                 healthStore: store,
                 workoutConfiguration: config
             )
+            // Running dynamics aren't in the default collected set — enable them so
+            // power/stride/vertical-oscillation/ground-contact stream live (run only).
+            if type.hkType == .running {
+                let dynamicIDs: [HKQuantityTypeIdentifier] = [
+                    .runningPower, .runningStrideLength,
+                    .runningVerticalOscillation, .runningGroundContactTime
+                ]
+                for id in dynamicIDs {
+                    if let qt = HKQuantityType.quantityType(forIdentifier: id) {
+                        dataSource.enableCollection(for: qt, predicate: nil)
+                    }
+                }
+            }
+            builder?.dataSource = dataSource
 
             session?.startActivity(with: start)
             builder?.beginCollection(withStart: start) { _, error in
@@ -570,6 +594,10 @@ final class WorkoutManager: NSObject, ObservableObject {
         routePointCount = 0
         routeCoordinates = []
         currentCadence = 0
+        currentRunningPower = 0
+        currentStrideLength = 0
+        currentVerticalOscillation = 0
+        currentGroundContactTime = 0
         lastAltitude = nil
         laps = []
         currentLapDistance = 0
@@ -691,6 +719,26 @@ extension WorkoutManager: HKLiveWorkoutBuilderDelegate {
                     // m/s — refine current speed from the native running-speed channel
                     if let v = statistics?.mostRecentQuantity()?.doubleValue(for: HKUnit.meter().unitDivided(by: .second())) {
                         self.currentSpeed = v
+                    }
+
+                case HKQuantityType(.runningPower):
+                    if let w = statistics?.mostRecentQuantity()?.doubleValue(for: .watt()) {
+                        self.currentRunningPower = w
+                    }
+
+                case HKQuantityType(.runningStrideLength):
+                    if let m = statistics?.mostRecentQuantity()?.doubleValue(for: .meter()) {
+                        self.currentStrideLength = m
+                    }
+
+                case HKQuantityType(.runningVerticalOscillation):
+                    if let cm = statistics?.mostRecentQuantity()?.doubleValue(for: HKUnit.meterUnit(with: .centi)) {
+                        self.currentVerticalOscillation = cm
+                    }
+
+                case HKQuantityType(.runningGroundContactTime):
+                    if let ms = statistics?.mostRecentQuantity()?.doubleValue(for: HKUnit.secondUnit(with: .milli)) {
+                        self.currentGroundContactTime = ms
                     }
 
                 case HKQuantityType(.stepCount):

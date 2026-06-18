@@ -165,7 +165,7 @@ struct CountdownView: View {
 
 struct ActiveWorkoutView: View {
     @ObservedObject var manager: WorkoutManager
-    @State private var page = 1   // start on Metrics; swipe left for Controls
+    @State private var page = 0   // start on the primary big-metric page
     @State private var mapCamera: MapCameraPosition = .userLocation(fallback: .automatic)
 
     private var sportColor: Color {
@@ -175,15 +175,177 @@ struct ActiveWorkoutView: View {
     }
 
     var body: some View {
-        // Apple Workout layout: [Controls] | [Metrics] | [Map] | [Now Playing]
-        // Start on Metrics (center). Swipe right→Controls, left→Map→Music.
+        // Garmin-style data screens: the Digital Crown pages vertically through
+        // one big-text metric screen at a time. Map/details/controls live at the
+        // end of the loop. (.verticalPage = Crown one page per detent, watchOS 10+)
         TabView(selection: $page) {
-            controlsPage.tag(0)
-            metricsPage.tag(1)
-            mapPage.tag(2)
-            nowPlayingPage.tag(3)
+            primaryPage.tag(0)
+            pacePage.tag(1)
+            heartRatePage.tag(2)
+            if manager.workoutType == .running {
+                dynamicsPage.tag(3)
+            }
+            elevationPage.tag(4)
+            metricsPage.tag(5)      // full details (existing rich scroll page)
+            mapPage.tag(6)
+            controlsPage.tag(7)
         }
-        .tabViewStyle(.page)
+        .tabViewStyle(.verticalPage)
+    }
+
+    // MARK: - Garmin-style big-text data pages (Crown-paged)
+
+    /// Big metric block: uppercase label + huge monospaced value + small unit.
+    private func bigField(_ label: String, _ value: String, _ unit: String = "", color: Color = .white) -> some View {
+        VStack(spacing: 0) {
+            Text(label)
+                .font(.system(size: 13, weight: .semibold))
+                .textCase(.uppercase)
+                .foregroundStyle(Color(white: 0.55))
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(value)
+                    .font(.system(size: 64, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .minimumScaleFactor(0.4)
+                    .lineLimit(1)
+                    .foregroundStyle(color)
+                if !unit.isEmpty {
+                    Text(unit)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(Color(white: 0.55))
+                }
+            }
+        }
+    }
+
+    private var primaryPage: some View {
+        let paused = manager.isPaused || manager.isAutoPaused
+        return VStack(spacing: 4) {
+            HStack(spacing: 5) {
+                Image(systemName: "circle.fill")
+                    .font(.system(size: 6))
+                    .foregroundStyle(paused ? Color(red: 1, green: 0.7, blue: 0) : sportColor)
+                Text(manager.isAutoPaused ? "자동 일시정지" : (manager.isPaused ? "일시정지" : manager.workoutType.rawValue))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(paused ? Color(red: 1, green: 0.7, blue: 0) : sportColor)
+                Spacer()
+            }
+            Text(formatTime(manager.elapsedSeconds))
+                .font(.system(size: 50, weight: .bold, design: .rounded))
+                .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
+                .foregroundStyle(.white)
+            HStack(spacing: 0) {
+                VStack(spacing: 0) {
+                    Text("거리").font(.system(size: 10)).foregroundStyle(Color(white: 0.55))
+                    Text(String(format: "%.2f", manager.totalDistance / 1000))
+                        .font(.system(size: 24, weight: .bold, design: .rounded)).monospacedDigit()
+                    Text("km").font(.system(size: 9)).foregroundStyle(Color(white: 0.5))
+                }
+                Spacer()
+                VStack(spacing: 0) {
+                    Text(manager.workoutType.usePace ? "페이스" : "속도").font(.system(size: 10)).foregroundStyle(Color(white: 0.55))
+                    Text(primaryPaceValue)
+                        .font(.system(size: 24, weight: .bold, design: .rounded)).monospacedDigit()
+                        .foregroundStyle(manager.isFreeMode ? .white : paceStatusColor)
+                    Text(manager.workoutType.usePace ? "/km" : "km/h").font(.system(size: 9)).foregroundStyle(Color(white: 0.5))
+                }
+            }
+            HStack(spacing: 8) {
+                Button { manager.togglePause() } label: {
+                    Image(systemName: manager.isPaused ? "play.fill" : "pause.fill")
+                        .font(.system(size: 15)).foregroundStyle(.black)
+                        .frame(maxWidth: .infinity).frame(height: 38)
+                        .background(manager.isPaused ? Color(red: 0.3, green: 0.85, blue: 0.45) : Color(red: 1, green: 0.8, blue: 0))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }.buttonStyle(.plain)
+                Button { manager.endWorkout() } label: {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 15)).foregroundStyle(.white)
+                        .frame(width: 54).frame(height: 38)
+                        .background(Color(red: 1, green: 0.3, blue: 0.3))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }.buttonStyle(.plain)
+            }
+            .padding(.top, 2)
+        }
+        .padding(.horizontal, 10)
+    }
+
+    private var primaryPaceValue: String {
+        if manager.workoutType.usePace {
+            return manager.currentPace > 0 ? formatPace(manager.currentPace) : "--:--"
+        }
+        return manager.currentSpeed > 0 ? String(format: "%.1f", manager.currentSpeed * 3.6) : "--"
+    }
+
+    private var pacePage: some View {
+        VStack(spacing: 10) {
+            if manager.workoutType.usePace {
+                bigField("현재 페이스", manager.currentPace > 0 ? formatPace(manager.currentPace) : "--:--", "/km",
+                         color: manager.isFreeMode ? sportColor : paceStatusColor)
+                HStack(spacing: 16) {
+                    miniMetric("평균", manager.averagePace > 0 ? formatPace(manager.averagePace) : "--:--", .white)
+                    if !manager.isFreeMode {
+                        miniMetric("목표", formatPace(manager.targetPacePerKm), Color(red: 0.35, green: 0.65, blue: 1.0))
+                    }
+                    miniMetric("속도", manager.currentSpeed > 0 ? String(format: "%.1f", manager.currentSpeed * 3.6) : "--", sportColor)
+                }
+            } else {
+                bigField("속도", manager.currentSpeed > 0 ? String(format: "%.1f", manager.currentSpeed * 3.6) : "--", "km/h", color: sportColor)
+                miniMetric("평균", manager.averageSpeed > 0 ? String(format: "%.1f km/h", manager.averageSpeed * 3.6) : "--", .white)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var heartRatePage: some View {
+        VStack(spacing: 8) {
+            bigField("심박수", manager.currentHeartRate > 0 ? "\(Int(manager.currentHeartRate))" : "--", "bpm",
+                     color: Color(red: 1, green: 0.35, blue: 0.35))
+            miniMetric("평균", manager.averageHeartRate > 0 ? "\(Int(manager.averageHeartRate))" : "--", .white)
+            if manager.zoneSeconds.reduce(0, +) > 0 {
+                hrZoneGauge.padding(.horizontal, 6)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var dynamicsPage: some View {
+        let hasData = manager.currentRunningPower > 0 || manager.currentStrideLength > 0
+            || manager.currentCadence > 0
+        return Group {
+            if hasData {
+                VStack(spacing: 10) {
+                    bigField("파워", manager.currentRunningPower > 0 ? "\(Int(manager.currentRunningPower))" : "--", "W", color: Color(red: 1, green: 0.6, blue: 0.2))
+                    HStack(spacing: 14) {
+                        miniMetric("케이던스", manager.currentCadence > 0 ? "\(Int(manager.currentCadence))" : "--", sportColor)
+                        miniMetric("보폭", manager.currentStrideLength > 0 ? String(format: "%.2f", manager.currentStrideLength) : "--", .white)
+                    }
+                    HStack(spacing: 14) {
+                        miniMetric("수직진폭", manager.currentVerticalOscillation > 0 ? String(format: "%.1f", manager.currentVerticalOscillation) : "--", Color(red: 0.35, green: 0.65, blue: 1.0))
+                        miniMetric("접지", manager.currentGroundContactTime > 0 ? "\(Int(manager.currentGroundContactTime))" : "--", Color(red: 0.7, green: 0.45, blue: 1.0))
+                    }
+                }
+            } else {
+                VStack(spacing: 6) {
+                    Image(systemName: "figure.run.circle").font(.system(size: 34)).foregroundStyle(sportColor)
+                    Text("러닝 다이내믹스").font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
+                    Text("측정 시작 후 잠시 뒤 표시").font(.system(size: 10)).foregroundStyle(Color(white: 0.5))
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var elevationPage: some View {
+        VStack(spacing: 10) {
+            bigField("고도", "\(Int(manager.currentAltitude))", "m", color: .white)
+            HStack(spacing: 18) {
+                miniMetric("오르막", "\(Int(manager.totalAscent))", Color(red: 1, green: 0.5, blue: 0.3))
+                miniMetric("내리막", "\(Int(manager.totalDescent))", Color(red: 0.35, green: 0.65, blue: 1.0))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Active Status Bar (운동 중 + 큰 타이머, always shown so user KNOWS it started)
