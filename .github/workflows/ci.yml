@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: macos-15   # ships Xcode 16 + iOS/watchOS SDKs
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Unit tests (MetricsEngine, macOS logic bundle)
+        run: |
+          xcodebuild test \
+            -project SportsDashboard.xcodeproj \
+            -scheme Tests \
+            -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Build watchOS app
+        run: |
+          xcodebuild build \
+            -project SportsDashboard.xcodeproj \
+            -scheme 'SportsDashboard Watch App' \
+            -destination 'generic/platform=watchOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Build iOS app
+        run: |
+          xcodebuild build \
+            -project SportsDashboard.xcodeproj \
+            -scheme 'SportsDashboard' \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO

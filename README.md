@@ -1,5 +1,7 @@
 # SportsDashboard
 
+[![CI](https://github.com/curara81/SportsDashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/curara81/SportsDashboard/actions/workflows/ci.yml)
+
 A standalone **Apple Watch + iPhone** training dashboard built on Apple HealthKit —
 live workout tracking, a real-time GPS map on the watch, advanced training-load
 analytics, and post-workout route **flyover** replays (with shareable video) on the phone.
@@ -54,6 +56,30 @@ released publicly so others can learn from it, build on it, or adapt it for thei
 
 SwiftUI · HealthKit · CoreLocation · MapKit · Swift Charts · AVFoundation ·
 WatchConnectivity · SwiftData. Targets watchOS 10 / iOS 17.
+
+## Build & run
+
+The project is generated from `project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen):
+
+```bash
+brew install xcodegen
+xcodegen generate
+open SportsDashboard.xcodeproj
+```
+
+Then pick the **`SportsDashboard Watch App`** scheme for the watch, or
+**`SportsDashboard`** for the iPhone, and Run. Full instructions (signing,
+free-team provisioning, on-device install, tests) are in **[BUILDING.md](BUILDING.md)**.
+
+## Tests
+
+MetricsEngine's sports-science formulas are covered by a host-less macOS logic-test bundle:
+
+```bash
+xcodebuild test -project SportsDashboard.xcodeproj -scheme Tests -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
+```
+
+CI (`.github/workflows/ci.yml`) runs these tests plus a watchOS + iOS compile on every push.
 
 ## Disclaimer & Trademarks
 

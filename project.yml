@@ -86,3 +86,32 @@ targets:
       - sdk: MapKit.framework
       - sdk: CoreLocation.framework
       - sdk: WatchConnectivity.framework
+
+  # Host-less logic test bundle on macOS — runs MetricsEngine formula tests
+  # without an iOS/watchOS simulator (pure Foundation/SwiftData math).
+  SportsDashboardTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Tests
+      - path: Shared/Services/MetricsEngine.swift
+      - path: Shared/Models/DatedValue.swift
+      - path: Shared/Models/DailyTrainingLoad.swift
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: true
+        PRODUCT_BUNDLE_IDENTIFIER: com.curara.SportsDashboardTests
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: GFJK8DP9ZC
+    dependencies:
+      - sdk: SwiftData.framework
+
+schemes:
+  Tests:
+    build:
+      targets:
+        SportsDashboardTests: all
+    test:
+      targets:
+        - SportsDashboardTests
