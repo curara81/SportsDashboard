@@ -10,7 +10,7 @@ struct SportsDashboardiOSApp: App {
 
     var body: some Scene {
         WindowGroup {
-            iOSDashboardView()
+            iOSRootView()
                 .onAppear { setupSyncReceiver() }
         }
         .modelContainer(for: [

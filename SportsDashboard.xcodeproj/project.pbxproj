@@ -21,6 +21,7 @@
 		2A7B6B7802ADA8B29FCF3F78 /* WeeklyTrendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D351CAEF42F5FDB32BF780C /* WeeklyTrendView.swift */; };
 		2A80044F03B463DD95E35976 /* MetricsEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A309ED3101D1FA1E1944061 /* MetricsEngineTests.swift */; };
 		2B398C9320A708EBE3211B35 /* WorkoutStartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4966895226CF417C35A58876 /* WorkoutStartView.swift */; };
+		2E5AE5B3697ACA7E14457F2C /* ShoesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6023EA860ACCC48C74E39C0D /* ShoesView.swift */; };
 		31B1D569A90E29D89994EE6E /* PaceWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43669518FEB30FB43F37937A /* PaceWorkoutView.swift */; };
 		340D25925C5AA31E3FED51E1 /* WeeklyTrendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D351CAEF42F5FDB32BF780C /* WeeklyTrendView.swift */; };
 		3CD7B793606790FBEA0E6891 /* WorkoutRouteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A69186A5CDDA914558D144C0 /* WorkoutRouteView.swift */; };
@@ -54,8 +55,10 @@
 		ACE21A5AB3AA377B6A9F0E45 /* DailyTrainingLoad.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C287B26A201D46CE8330FC /* DailyTrainingLoad.swift */; };
 		AE352E4CA59849F43D492D45 /* WatchConnectivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81BE111D2D5EFFA7D13271BE /* WatchConnectivity.framework */; };
 		B3C3E872416626FFAEBF2FE5 /* MetricsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98D9400B052753FAB52877D2 /* MetricsEngine.swift */; };
+		B822E86F2470E85366D4733E /* iOSCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33DB63CBBD906AA2FAADD666 /* iOSCalendarView.swift */; };
 		BA5D86480A73AE2688563E7F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 89C80097599AA6C038610B87 /* Assets.xcassets */; };
 		BBE0BAE95EA898BD92CA98A2 /* DailyReadiness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F75F2448069880E7B41520A /* DailyReadiness.swift */; };
+		BE10AAC0FFC331CC99A66059 /* iOSRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77178CE7E4E6F2B51E70A1DB /* iOSRootView.swift */; };
 		C0A3B895270C8E2099D735FA /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C42844A9FD850D06198ABDBB /* HealthKit.framework */; };
 		C5EBF9487297DE3F34483154 /* SwiftData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A32E7B795D99BE831991E804 /* SwiftData.framework */; };
 		C63859691B76401648F567EA /* SwiftData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A32E7B795D99BE831991E804 /* SwiftData.framework */; };
@@ -73,12 +76,14 @@
 		EFAEE720621330D5A6B73F50 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 63EFD148B89752B01CC028EB /* CoreLocation.framework */; };
 		F0E6C34FC70AECD841A1EA73 /* MetricsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98D9400B052753FAB52877D2 /* MetricsEngine.swift */; };
 		F4C02C323D65A268017841DD /* BodyCompositionRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = C075346E22BE601D2B79C383 /* BodyCompositionRecord.swift */; };
+		F7BAC2BFECEB31F76AA1570F /* iOSMoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F59D84D19A099C0D5139217B /* iOSMoreView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		06AA41D554B276327DC4E7E4 /* iOSSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSSettingsView.swift; sourceTree = "<group>"; };
 		204C349968063E78EC90EDB1 /* WorkoutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutManager.swift; sourceTree = "<group>"; };
 		22190627BED0569B07A54E1D /* SportsDashboard.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SportsDashboard.entitlements; sourceTree = "<group>"; };
+		33DB63CBBD906AA2FAADD666 /* iOSCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSCalendarView.swift; sourceTree = "<group>"; };
 		3D86F06585C621FD72B2FD9E /* SportsDashboardiOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SportsDashboardiOSApp.swift; sourceTree = "<group>"; };
 		429066673D0F8AC0D96FB335 /* DatedValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatedValue.swift; sourceTree = "<group>"; };
 		43669518FEB30FB43F37937A /* PaceWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaceWorkoutView.swift; sourceTree = "<group>"; };
@@ -94,6 +99,7 @@
 		6D1449F2FCBC9AC3B2ACA523 /* Charts.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Charts.framework; path = System/Library/Frameworks/Charts.framework; sourceTree = SDKROOT; };
 		6F75F2448069880E7B41520A /* DailyReadiness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyReadiness.swift; sourceTree = "<group>"; };
 		765C9BE79B2EA317E2D06B7A /* SharedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedComponents.swift; sourceTree = "<group>"; };
+		77178CE7E4E6F2B51E70A1DB /* iOSRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSRootView.swift; sourceTree = "<group>"; };
 		7CED1B4A231F68A58622E095 /* SyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncManager.swift; sourceTree = "<group>"; };
 		81BE111D2D5EFFA7D13271BE /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = System/Library/Frameworks/WatchConnectivity.framework; sourceTree = SDKROOT; };
 		89C80097599AA6C038610B87 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -119,6 +125,7 @@
 		CC4D2C56D1B2C26C59E99ECE /* iOSDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSDashboardView.swift; sourceTree = "<group>"; };
 		DC4F510203B0C7B50FCEC31B /* SportsDashboardApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SportsDashboardApp.swift; sourceTree = "<group>"; };
 		F4C287B26A201D46CE8330FC /* DailyTrainingLoad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyTrainingLoad.swift; sourceTree = "<group>"; };
+		F59D84D19A099C0D5139217B /* iOSMoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSMoreView.swift; sourceTree = "<group>"; };
 		F78F20F5B3B08AD2D6C38A27 /* SportsDashboard.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SportsDashboard.entitlements; sourceTree = "<group>"; };
 		FE7EE8AC9A0C7FD61514FCA3 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -307,7 +314,10 @@
 		EDBDC40DDD8361DDC377C22A /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				33DB63CBBD906AA2FAADD666 /* iOSCalendarView.swift */,
 				CC4D2C56D1B2C26C59E99ECE /* iOSDashboardView.swift */,
+				F59D84D19A099C0D5139217B /* iOSMoreView.swift */,
+				77178CE7E4E6F2B51E70A1DB /* iOSRootView.swift */,
 				06AA41D554B276327DC4E7E4 /* iOSSettingsView.swift */,
 			);
 			path = Views;
@@ -501,13 +511,17 @@
 				0D50AC940E4F8B0E74758BAB /* RunningDynamicsView.swift in Sources */,
 				C703488F30853EBD9E859404 /* SharedComponents.swift in Sources */,
 				4754B962B8C7E60F0CB977D6 /* Shoe.swift in Sources */,
+				2E5AE5B3697ACA7E14457F2C /* ShoesView.swift in Sources */,
 				611186E599E3E2C9EB220C31 /* SportsDashboardiOSApp.swift in Sources */,
 				D86FBA8662C70CC48527BE92 /* SyncManager.swift in Sources */,
 				741235D9D2347EE2D99B56FB /* TrainingHistoryView.swift in Sources */,
 				4862D5C5B0A935260C688D4E /* UserProfile.swift in Sources */,
 				340D25925C5AA31E3FED51E1 /* WeeklyTrendView.swift in Sources */,
 				CB0ADE74DDFA5883BD74EC71 /* WorkoutRouteView.swift in Sources */,
+				B822E86F2470E85366D4733E /* iOSCalendarView.swift in Sources */,
 				5C76E3D8DA847B44FF06252D /* iOSDashboardView.swift in Sources */,
+				F7BAC2BFECEB31F76AA1570F /* iOSMoreView.swift in Sources */,
+				BE10AAC0FFC331CC99A66059 /* iOSRootView.swift in Sources */,
 				CA177B7AF665D863298A0B32 /* iOSSettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -27,6 +27,7 @@ targets:
       - path: WatchApp/Views/WeeklyTrendView.swift
       - path: WatchApp/Views/RunningDynamicsView.swift
       - path: WatchApp/Views/FlyoverReplayView.swift
+      - path: WatchApp/Views/ShoesView.swift
       - path: WatchApp/ViewModels/DashboardViewModel.swift
     settings:
       base:

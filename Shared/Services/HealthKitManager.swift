@@ -203,6 +203,29 @@ final class HealthKitManager: ObservableObject {
         }
     }
 
+    /// Daily step totals for the last `daysBack` days (startOfDay → steps). For the calendar.
+    func fetchDailySteps(daysBack: Int = 40) async -> [Date: Double] {
+        guard let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount) else { return [:] }
+        let cal = Calendar.current
+        let anchor = cal.startOfDay(for: cal.date(byAdding: .day, value: -daysBack, to: Date()) ?? Date())
+        var interval = DateComponents(); interval.day = 1
+        return await withCheckedContinuation { cont in
+            let q = HKStatisticsCollectionQuery(
+                quantityType: stepType, quantitySamplePredicate: nil,
+                options: .cumulativeSum, anchorDate: anchor, intervalComponents: interval)
+            q.initialResultsHandler = { _, results, _ in
+                var out: [Date: Double] = [:]
+                results?.enumerateStatistics(from: anchor, to: Date()) { stat, _ in
+                    if let sum = stat.sumQuantity()?.doubleValue(for: .count()) {
+                        out[cal.startOfDay(for: stat.startDate)] = sum
+                    }
+                }
+                cont.resume(returning: out)
+            }
+            store.execute(q)
+        }
+    }
+
     /// Best recent run for race prediction: the running workout (>=2km) with the
     /// fastest average pace in the last `daysBack` days. Returns (distanceKm, time).
     func fetchBestRecentRun(daysBack: Int = 90) async throws -> (distanceKm: Double, time: TimeInterval)? {
