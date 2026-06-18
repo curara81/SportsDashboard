@@ -597,6 +597,31 @@ struct MetricsEngine {
         return min(actualAge + 10, 80)
     }
 
+    // MARK: - Sleep Score (0–100 from HealthKit sleep)
+
+    /// Composite 0–100 sleep score: duration (45%) + restorative deep+REM share (30%)
+    /// + continuity/efficiency (25%). Works from data AutoSleep / Apple Watch write to Health.
+    static func sleepScore(asleepHours: Double, deepHours: Double, remHours: Double,
+                           awakeHours: Double, targetHours: Double = 8) -> (score: Int, label: String) {
+        guard asleepHours > 0 else { return (0, "데이터 없음") }
+        let duration = min(asleepHours / targetHours, 1.0)
+        // Restorative: deep+REM ideally ~40% of asleep time.
+        let restorative = min(((deepHours + remHours) / asleepHours) / 0.40, 1.0)
+        // Continuity: efficiency = asleep / (asleep + awake); 70% → 0, 95%+ → 1.
+        let efficiency = awakeHours > 0 ? asleepHours / (asleepHours + awakeHours) : 1.0
+        let continuity = min(max((efficiency - 0.70) / 0.25, 0), 1.0)
+        let score = Int(((duration * 0.45 + restorative * 0.30 + continuity * 0.25) * 100).rounded())
+        let label: String
+        switch score {
+        case 85...: label = "매우 좋음"
+        case 70..<85: label = "좋음"
+        case 55..<70: label = "보통"
+        case 40..<55: label = "부족"
+        default: label = "나쁨"
+        }
+        return (score, label)
+    }
+
     // MARK: - Daily guidance (Target Load + recommended run)
 
     struct DailyGuidance {

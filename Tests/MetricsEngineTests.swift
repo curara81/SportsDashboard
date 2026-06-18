@@ -182,6 +182,22 @@ final class MetricsEngineTests: XCTestCase {
         XCTAssertGreaterThan(g.targetLoadHigh, g.targetLoadLow)
     }
 
+    // MARK: - Sleep score
+
+    func testSleepScore() {
+        // 8h, ~37% deep+REM, little awake → high
+        let good = MetricsEngine.sleepScore(asleepHours: 8, deepHours: 1.2, remHours: 1.8, awakeHours: 0.3)
+        XCTAssertGreaterThan(good.score, 80)
+        // 4h, fragmented → low
+        let bad = MetricsEngine.sleepScore(asleepHours: 4, deepHours: 0.3, remHours: 0.4, awakeHours: 1.5)
+        XCTAssertLessThan(bad.score, 55)
+        // more/better sleep scores higher
+        XCTAssertGreaterThan(
+            MetricsEngine.sleepScore(asleepHours: 8, deepHours: 1.0, remHours: 1.5, awakeHours: 0.2).score,
+            MetricsEngine.sleepScore(asleepHours: 5, deepHours: 0.6, remHours: 0.9, awakeHours: 0.2).score)
+        XCTAssertEqual(MetricsEngine.sleepScore(asleepHours: 0, deepHours: 0, remHours: 0, awakeHours: 0).label, "데이터 없음")
+    }
+
     // MARK: - VDOT race prediction
 
     func testVDOTRacePrediction() {

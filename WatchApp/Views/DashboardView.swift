@@ -390,6 +390,19 @@ struct DashboardView: View {
                         }
                     }
                     .frame(height: 6)
+
+                    if let d = vm.sleepDeep, let r = vm.sleepREM {
+                        let sc = MetricsEngine.sleepScore(
+                            asleepHours: hours, deepHours: d, remHours: r, awakeHours: vm.sleepAwake ?? 0)
+                        let scColor: Color = sc.score >= 70 ? DS.green : (sc.score >= 55 ? DS.orange : DS.red)
+                        HStack(spacing: 6) {
+                            Text("수면 점수").font(.system(size: 9)).foregroundStyle(DS.dimText)
+                            Text("\(sc.score)")
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .foregroundStyle(scColor)
+                            Text(sc.label).font(.system(size: 10, weight: .semibold)).foregroundStyle(scColor)
+                        }
+                    }
                 } else {
                     Text("수면 데이터 없음").foregroundStyle(.secondary).font(.caption)
                 }
