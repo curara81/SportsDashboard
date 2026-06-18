@@ -52,6 +52,10 @@ struct DashboardView: View {
     @StateObject private var vm = DashboardViewModel()
     @Environment(\.modelContext) private var modelContext
     @State private var currentDate = Date()
+    #if os(watchOS)
+    // App-session-scoped so an active workout survives navigating in/out of WorkoutStartView.
+    @StateObject private var workoutManager = WorkoutManager()
+    #endif
 
     var body: some View {
         NavigationStack {
@@ -786,7 +790,7 @@ struct DashboardView: View {
         VStack(spacing: 6) {
             // Big primary "운동 시작" button
             NavigationLink {
-                WorkoutStartView()
+                WorkoutStartView(manager: workoutManager)
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "figure.run")
@@ -813,7 +817,7 @@ struct DashboardView: View {
 
     private func quickSportChip(_ sport: WorkoutManager.SportType, _ icon: String, _ label: String) -> some View {
         NavigationLink {
-            WorkoutStartView(autoStart: sport)
+            WorkoutStartView(manager: workoutManager, autoStart: sport)
         } label: {
             VStack(spacing: 3) {
                 Image(systemName: icon)

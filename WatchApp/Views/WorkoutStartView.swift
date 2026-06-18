@@ -5,7 +5,9 @@ import MapKit
 import CoreLocation
 
 struct WorkoutStartView: View {
-    @StateObject private var manager = WorkoutManager()
+    // Owned by DashboardView so an active workout survives navigating back out of
+    // this screen (a @StateObject here would be deallocated on pop → workout lost).
+    @ObservedObject var manager: WorkoutManager
     @Query private var profiles: [UserProfile]
 
     /// If set, immediately starts this sport (skips the selector grid).
@@ -36,7 +38,10 @@ struct WorkoutStartView: View {
         }
         .onAppear {
             // Quick-start chip → begin chosen sport immediately, once.
-            if let sport = autoStart, !didAutoStart {
+            // Skip if a workout is already running (re-entering this screen after
+            // navigating back must NOT restart the in-progress session).
+            if let sport = autoStart, !didAutoStart,
+               !manager.isActive, !manager.isCountingDown, !manager.isShowingSummary {
                 didAutoStart = true
                 manager.startWorkout(type: sport, zoneLowerBounds: zoneLowerBounds)
             }
@@ -435,26 +440,12 @@ struct ActiveWorkoutView: View {
                     }
                 }
                 .mapStyle(.standard(elevation: .flat))
+                // Map must NOT eat the horizontal drag — otherwise the user gets
+                // trapped on this page (swipe pans the map instead of changing
+                // TabView pages). Disable touch: the camera follows the runner
+                // automatically, so manual pan/recenter isn't needed here.
+                .allowsHitTesting(false)
                 .ignoresSafeArea(edges: .bottom)
-
-                // Recenter — re-engage follow after a manual pan (top trailing).
-                VStack {
-                    HStack {
-                        Spacer()
-                        Button {
-                            withAnimation { mapCamera = .userLocation(fallback: .automatic) }
-                        } label: {
-                            Image(systemName: "location.fill")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundStyle(.white)
-                                .frame(width: 28, height: 28)
-                                .background(.ultraThinMaterial, in: Circle())
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    Spacer()
-                }
-                .padding(8)
 
                 // Live stat strip — distance · pace/speed · time.
                 HStack(spacing: 0) {
