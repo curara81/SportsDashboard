@@ -622,6 +622,12 @@ struct MetricsEngine {
         return (score, label)
     }
 
+    /// Sleep Bank (sleep debt): rolling sum of nightly (asleep − target), in hours.
+    /// Negative = debt, positive = surplus. AutoSleep uses a ~7-night window.
+    static func sleepBank(nightlyHours: [Double], targetHours: Double = 8) -> Double {
+        nightlyHours.reduce(0) { $0 + ($1 - targetHours) }
+    }
+
     // MARK: - Daily guidance (Target Load + recommended run)
 
     struct DailyGuidance {

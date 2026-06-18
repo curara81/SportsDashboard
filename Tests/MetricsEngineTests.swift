@@ -198,6 +198,14 @@ final class MetricsEngineTests: XCTestCase {
         XCTAssertEqual(MetricsEngine.sleepScore(asleepHours: 0, deepHours: 0, remHours: 0, awakeHours: 0).label, "데이터 없음")
     }
 
+    func testSleepBank() {
+        // 7 nights of 7h vs 8h target → -7h debt
+        XCTAssertEqual(MetricsEngine.sleepBank(nightlyHours: Array(repeating: 7, count: 7)), -7, accuracy: 0.001)
+        // surplus
+        XCTAssertEqual(MetricsEngine.sleepBank(nightlyHours: [9, 9], targetHours: 8), 2, accuracy: 0.001)
+        XCTAssertEqual(MetricsEngine.sleepBank(nightlyHours: []), 0, accuracy: 0.001)
+    }
+
     // MARK: - VDOT race prediction
 
     func testVDOTRacePrediction() {

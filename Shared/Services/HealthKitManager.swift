@@ -129,6 +129,36 @@ final class HealthKitManager: ObservableObject {
         return hours
     }
 
+    /// Asleep hours per night for the last `nights` nights (oldest→newest), bucketed
+    /// by wake day. For the Sleep Bank (sleep-debt) calculation.
+    func fetchNightlySleepHours(nights: Int = 7) async -> [Double] {
+        let sleepType = HKCategoryType(.sleepAnalysis)
+        let cal = Calendar.current
+        let end = Date()
+        guard let start = cal.date(byAdding: .day, value: -nights, to: cal.startOfDay(for: end)) else { return [] }
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
+        let samples = (try? await queryCategorySamples(type: sleepType, predicate: predicate)) ?? []
+
+        let asleep: Set<Int> = [
+            HKCategoryValueSleepAnalysis.asleepCore.rawValue,
+            HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
+            HKCategoryValueSleepAnalysis.asleepREM.rawValue,
+            HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue
+        ]
+        var byDay: [Date: Double] = [:]
+        for s in samples where asleep.contains(s.value) {
+            let day = cal.startOfDay(for: s.endDate)   // attribute to wake day
+            byDay[day, default: 0] += s.endDate.timeIntervalSince(s.startDate)
+        }
+        var out: [Double] = []
+        for i in stride(from: nights - 1, through: 0, by: -1) {
+            if let day = cal.date(byAdding: .day, value: -i, to: cal.startOfDay(for: end)) {
+                out.append((byDay[day] ?? 0) / 3600.0)
+            }
+        }
+        return out
+    }
+
     // MARK: - Resting Heart Rate
 
     func fetchRestingHeartRate(daysBack: Int = 7) async throws -> [DatedValue] {

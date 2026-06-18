@@ -54,6 +54,7 @@ final class DashboardViewModel: ObservableObject {
     @Published var acwr: Double = 0
     @Published var acwrLabel: String = ""
     @Published var sleepHours: Double?
+    @Published var sleepBank: Double?
     @Published var restingHR: Double?
     @Published var latestHRV: Double?
     @Published var bodyMass: Double?
@@ -135,6 +136,9 @@ final class DashboardViewModel: ObservableObject {
             self.sleepDeep = stages.deep
             self.sleepREM = stages.rem
             self.sleepAwake = stages.awake
+
+            let nightly = await hk.fetchNightlySleepHours(nights: 7)
+            self.sleepBank = MetricsEngine.sleepBank(nightlyHours: nightly)
 
             let status = MetricsEngine.evaluateHRVStatus(values: hrvValues)
             self.hrvStatus = status

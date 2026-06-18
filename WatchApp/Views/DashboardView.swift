@@ -403,6 +403,15 @@ struct DashboardView: View {
                             Text(sc.label).font(.system(size: 10, weight: .semibold)).foregroundStyle(scColor)
                         }
                     }
+
+                    if let bank = vm.sleepBank {
+                        HStack(spacing: 6) {
+                            Text("수면 부채(7일)").font(.system(size: 9)).foregroundStyle(DS.dimText)
+                            Text(String(format: "%@%.1fh", bank >= 0 ? "+" : "−", abs(bank)))
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .foregroundStyle(bank >= 0 ? DS.green : DS.orange)
+                        }
+                    }
                 } else {
                     Text("수면 데이터 없음").foregroundStyle(.secondary).font(.caption)
                 }
