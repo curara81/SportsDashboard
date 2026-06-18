@@ -53,6 +53,9 @@ final class HealthKitManager: ObservableObject {
         if let sleep = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) {
             types.insert(sleep)
         }
+        // GPS workout route — required to READ saved routes for the post-workout
+        // map / flyover. Without this the route query returns empty ("GPS 경로 없음").
+        types.insert(HKSeriesType.workoutRoute())
         return types
     }
 

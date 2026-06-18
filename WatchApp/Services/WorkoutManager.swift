@@ -203,7 +203,10 @@ final class WorkoutManager: NSObject, ObservableObject {
             HKQuantityType(.heartRate),
             HKQuantityType(.distanceWalkingRunning),
             HKQuantityType(.distanceCycling),
-            HKQuantityType(.activeEnergyBurned)
+            HKQuantityType(.activeEnergyBurned),
+            // Required to SAVE the GPS route via HKWorkoutRouteBuilder.finishRoute.
+            // Missing here = route silently never persists → detail shows "GPS 경로 없음".
+            HKSeriesType.workoutRoute()
         ]
         let read: Set<HKObjectType> = [
             HKQuantityType(.heartRate),
