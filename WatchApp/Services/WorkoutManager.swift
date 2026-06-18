@@ -138,6 +138,7 @@ final class WorkoutManager: NSObject, ObservableObject {
 
     var targetPacePerKm: Double = 0                // seconds per km (0 = free mode)
     var paceToleranceSeconds: Double = 15
+    var targetCadence: Double = 180                // spm, cadence-coach target (default)
 
     var isFreeMode: Bool { targetPacePerKm <= 0 }
 

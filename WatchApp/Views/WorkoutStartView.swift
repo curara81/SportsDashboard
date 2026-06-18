@@ -328,7 +328,9 @@ struct ActiveWorkoutView: View {
                 VStack(spacing: 10) {
                     bigField("파워", manager.currentRunningPower > 0 ? "\(Int(manager.currentRunningPower))" : "--", "W", color: Color(red: 1, green: 0.6, blue: 0.2))
                     HStack(spacing: 14) {
-                        miniMetric("케이던스", manager.currentCadence > 0 ? "\(Int(manager.currentCadence))" : "--", sportColor)
+                        miniMetric("케이던스 (목표 \(Int(manager.targetCadence)))",
+                                   manager.currentCadence > 0 ? "\(Int(manager.currentCadence))" : "--",
+                                   cadenceColor(manager.currentCadence))
                         miniMetric("보폭", manager.currentStrideLength > 0 ? String(format: "%.2f", manager.currentStrideLength) : "--", .white)
                     }
                     HStack(spacing: 14) {
@@ -367,6 +369,15 @@ struct ActiveWorkoutView: View {
                 .font(.system(size: 10)).foregroundStyle(Color(white: 0.5))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Cadence-coach color: green near target, amber off, red far off.
+    private func cadenceColor(_ spm: Double) -> Color {
+        guard spm > 0 else { return .white }
+        let d = abs(spm - manager.targetCadence)
+        if d <= 5 { return Color(red: 0.3, green: 0.85, blue: 0.45) }
+        if d <= 12 { return Color(red: 1, green: 0.65, blue: 0.2) }
+        return Color(red: 1, green: 0.4, blue: 0.4)
     }
 
     private func formatGap(_ seconds: Double) -> String {
