@@ -114,6 +114,37 @@ struct WorkoutStartView: View {
                     }
                 }
                 .buttonStyle(.plain)
+
+                // Structured interval workouts
+                Text("인터벌 운동")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color(white: 0.5))
+                    .padding(.top, 6)
+
+                ForEach(IntervalWorkout.presets) { plan in
+                    Button {
+                        manager.startStructured(plan: plan, zoneLowerBounds: zoneLowerBounds)
+                    } label: {
+                        CardView {
+                            HStack(spacing: 12) {
+                                Image(systemName: "repeat")
+                                    .font(.system(size: 20))
+                                    .foregroundStyle(Color(red: 1, green: 0.35, blue: 0.35))
+                                    .frame(width: 32)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(plan.name).font(.system(size: 15, weight: .bold))
+                                    Text("\(plan.workReps)개 구간")
+                                        .font(.system(size: 10)).foregroundStyle(Color(white: 0.55))
+                                }
+                                Spacer()
+                                Image(systemName: "play.fill")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(Color(red: 1, green: 0.35, blue: 0.35))
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .padding(.horizontal, 6)
         }
@@ -224,9 +255,27 @@ struct ActiveWorkoutView: View {
         }
     }
 
+    private var planStepColor: Color {
+        guard let plan = manager.activePlan, manager.planStepIndex >= 0,
+              manager.planStepIndex < plan.steps.count else { return sportColor }
+        let c = plan.steps[manager.planStepIndex].kind.color
+        return Color(red: c.r, green: c.g, blue: c.b)
+    }
+
     private var primaryPage: some View {
         let paused = manager.isPaused || manager.isAutoPaused
         return VStack(spacing: 4) {
+            if manager.planStepIndex >= 0 || !manager.planStepLabel.isEmpty {
+                HStack(spacing: 6) {
+                    Text(manager.planStepLabel).font(.system(size: 12, weight: .bold))
+                    Spacer()
+                    Text(manager.planStepDetail)
+                        .font(.system(size: 11)).foregroundStyle(Color(white: 0.75))
+                }
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(planStepColor.opacity(0.28))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
             HStack(spacing: 5) {
                 Image(systemName: "circle.fill")
                     .font(.system(size: 6))

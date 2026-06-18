@@ -74,6 +74,14 @@ final class WorkoutManager: NSObject, ObservableObject {
     @Published var autoPauseEnabled = true
     @Published var isAutoPaused = false
 
+    // Structured interval workout
+    @Published var planStepIndex: Int = -1     // -1 = no plan / finished
+    @Published var planStepLabel: String = ""
+    @Published var planStepDetail: String = ""
+    var activePlan: IntervalWorkout?
+    private var planStepStartDistance: Double = 0
+    private var planStepStartTime: TimeInterval = 0
+
     struct Lap: Identifiable {
         let id = UUID()
         let index: Int
@@ -201,6 +209,12 @@ final class WorkoutManager: NSObject, ObservableObject {
 
     /// zoneLowerBounds: 5 ascending Karvonen lower bounds [Z1,Z2,Z3,Z4,Z5] for live
     /// zone-time tracking. Pass UserProfile.zones.map(\.lower). Empty = no zone tracking.
+    /// Begin a structured interval workout (running).
+    func startStructured(plan: IntervalWorkout, zoneLowerBounds: [Double] = []) {
+        activePlan = plan
+        startWorkout(type: .running, targetPace: 0, tolerance: 15, zoneLowerBounds: zoneLowerBounds)
+    }
+
     func startWorkout(type: SportType, targetPace: Double = 0, tolerance: Double = 15,
                       zoneLowerBounds: [Double] = []) {
         self.workoutType = type
@@ -292,6 +306,7 @@ final class WorkoutManager: NSObject, ObservableObject {
         isPaused = false
         startTimer()
         playHaptic(0) // start
+        if activePlan != nil { beginPlanStep(0) }
 
         // GPS for outdoor sports (run/walk/cycle all outdoor here).
         usesGPS = true
@@ -479,6 +494,49 @@ final class WorkoutManager: NSObject, ObservableObject {
         currentLapDistance = 0
         currentLapSeconds = 0
         if isManual { playHaptic(3) }
+
+        // A manual lap advances an open-goal interval step.
+        if isManual, let plan = activePlan, planStepIndex >= 0, planStepIndex < plan.steps.count,
+           case .open = plan.steps[planStepIndex].goal {
+            beginPlanStep(planStepIndex + 1)
+        }
+    }
+
+    // MARK: - Structured Interval Plan
+
+    private func beginPlanStep(_ i: Int) {
+        guard let plan = activePlan else { planStepIndex = -1; return }
+        if i >= plan.steps.count {
+            planStepIndex = -1
+            planStepLabel = "운동 완료"
+            planStepDetail = "모든 구간 완료"
+            playHaptic(2) // success
+            return
+        }
+        planStepIndex = i
+        planStepStartDistance = totalDistance
+        planStepStartTime = elapsedSeconds
+        planStepLabel = plan.steps[i].kind.label
+        playHaptic(3) // step transition
+    }
+
+    private func advancePlanIfNeeded() {
+        guard let plan = activePlan, planStepIndex >= 0, planStepIndex < plan.steps.count else { return }
+        let step = plan.steps[planStepIndex]
+        planStepLabel = step.kind.label
+        switch step.goal {
+        case .distance(let d):
+            let done = totalDistance - planStepStartDistance
+            planStepDetail = String(format: "남은 %dm", Int(max(0, d - done)))
+            if done >= d { beginPlanStep(planStepIndex + 1) }
+        case .time(let t):
+            let done = elapsedSeconds - planStepStartTime
+            let rem = Int(max(0, t - done))
+            planStepDetail = String(format: "남은 %d:%02d", rem / 60, rem % 60)
+            if done >= t { beginPlanStep(planStepIndex + 1) }
+        case .open:
+            planStepDetail = "랩 버튼으로 다음 구간"
+        }
     }
 
     // MARK: - Metrics Calculation
@@ -570,6 +628,9 @@ final class WorkoutManager: NSObject, ObservableObject {
             virtualPartnerGapSeconds = gap * (targetPacePerKm / 1000.0)  // m → s at target pace
         }
 
+        // Structured interval plan: advance step when its goal is met
+        advancePlanIfNeeded()
+
         // Pace status check (only for pace-guided mode)
         guard targetPacePerKm > 0 else { return }
 
@@ -646,6 +707,12 @@ final class WorkoutManager: NSObject, ObservableObject {
         currentLapSeconds = 0
         zoneSeconds = [0, 0, 0, 0, 0]
         isAutoPaused = false
+        activePlan = nil
+        planStepIndex = -1
+        planStepLabel = ""
+        planStepDetail = ""
+        planStepStartDistance = 0
+        planStepStartTime = 0
         lapStartDistance = 0
         lapStartTime = 0
         lapStartAscent = 0
