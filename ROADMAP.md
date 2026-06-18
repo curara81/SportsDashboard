@@ -43,24 +43,28 @@ watch app installs from Xcode (scheme **SportsDashboard Watch App** → your App
 - ⬜ ClimbPro (pre-segment loaded route elevation into climbs; live remaining grade/ascent)
 - ⬜ Route Roulette (generate a target-distance loop from current location, MapKit)
 
-## 🔨 Phase 4 — intelligence
+## ✅ Phase 4 — intelligence (complete)
 - ✅ Burner: live fat/carb substrate split from intensity (data screen)
 - ✅ Cardio Fitness level (VO2max → age/sex tier, on dashboard) + tests
 - ✅ Cardiac decoupling live (aerobic durability, data screen)
-- ⬜ **Target Load (daily how-much-to-train band) + Daily Run recommendation** ← RESUME HERE
-- ⬜ VDOT-based race prediction (blend VO2max + load) — upgrade Riegel
-- ⬜ Form Drift Detector (fatigue from running-dynamics decay + cue)
+- ✅ Target Load (daily band) + Daily Run recommendation (dashboard card) + tests
+- ✅ VDOT (Daniels) VO2max-based race prediction (RacePredictionView) + tests
+- ✅ Form Drift Detector (cadence/GCT decay vs baseline + haptic cue)
 
-## UI
-- ✅ In-workout Crown data screens (one metric/screen, big text)
-- ✅ Dashboard Crown-paged (one metric/screen, replaces long scroll)
-
-## ⬜ Phase 5 — safety & extras
+## ⬜ Phase 5 — safety & extras (next)
 - Safety Beacon: Action Button + 86 dB siren + Find My live share + dead-man timer
 - Adaptive fueling/hydration coach (sweat-rate learning)
 - Heat/altitude auto-derating of pace targets
 - Shoe mileage tracking + retirement reminder
 - Auto-highlights reel on the flyover (fastest km, PR, HR peak)
+
+## ⬜ Phase 3 leftover (deferred — needs course infra)
+- GPX course import (iPhone) + WatchConnectivity sync + on-watch course follow
+- Off-route haptic alert · ClimbPro · Route Roulette
+
+## UI
+- ✅ In-workout Crown data screens (one metric/screen, big text)
+- ✅ Dashboard Crown-paged (one metric/screen, replaces long scroll)
 
 ## 🔒 Premium / needs accessory
 - ZoneSense (DDFA real-time metabolic zones) — needs BLE chest strap (Polar H10) via CoreBluetooth
