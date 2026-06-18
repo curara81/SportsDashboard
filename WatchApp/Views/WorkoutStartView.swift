@@ -225,6 +225,9 @@ struct ActiveWorkoutView: View {
             }
             metricsPage.tag(5)      // full details (existing rich scroll page)
             mapPage.tag(6)
+            if !manager.routeCoordinates.isEmpty {
+                backToStartPage.tag(10)   // compass home
+            }
             controlsPage.tag(7)
         }
         .tabViewStyle(.verticalPage)
@@ -445,6 +448,28 @@ struct ActiveWorkoutView: View {
                 miniMetric("오르막", "\(Int(manager.totalAscent))", Color(red: 1, green: 0.5, blue: 0.3))
                 miniMetric("내리막", "\(Int(manager.totalDescent))", Color(red: 0.35, green: 0.65, blue: 1.0))
             }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Back-to-Start: compass arrow (relative to heading) + straight-line distance home.
+    private var backToStartPage: some View {
+        let distText: String = manager.distanceToStart >= 1000
+            ? String(format: "%.2f km", manager.distanceToStart / 1000)
+            : "\(Int(manager.distanceToStart)) m"
+        return VStack(spacing: 8) {
+            Text("출발점 복귀")
+                .font(.system(size: 13, weight: .semibold)).textCase(.uppercase)
+                .foregroundStyle(Color(white: 0.55))
+            Image(systemName: "location.north.fill")
+                .font(.system(size: 46))
+                .foregroundStyle(sportColor)
+                .rotationEffect(.degrees(manager.bearingToStart - manager.currentHeading))
+            Text(distText)
+                .font(.system(size: 30, weight: .bold, design: .rounded))
+                .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
+            Text("직선 거리")
+                .font(.system(size: 10)).foregroundStyle(Color(white: 0.5))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

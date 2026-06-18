@@ -54,6 +54,11 @@ final class WorkoutManager: NSObject, ObservableObject {
     /// points fed to HKWorkoutRouteBuilder, kept in-memory for real-time display.
     @Published var routeCoordinates: [CLLocationCoordinate2D] = []
 
+    // Back-to-Start navigation
+    @Published var distanceToStart: Double = 0     // meters, straight line
+    @Published var bearingToStart: Double = 0      // degrees, absolute (0 = north)
+    @Published var currentHeading: Double = 0      // degrees, device heading
+
     // Cadence
     @Published var currentCadence: Double = 0       // steps per minute
 
@@ -342,6 +347,7 @@ final class WorkoutManager: NSObject, ObservableObject {
         if usesGPS {
             routeBuilder = HKWorkoutRouteBuilder(healthStore: store, device: nil)
             locationManager.startUpdatingLocation()
+            locationManager.startUpdatingHeading()
         }
 
         let config = HKWorkoutConfiguration()
@@ -445,7 +451,7 @@ final class WorkoutManager: NSObject, ObservableObject {
         countdownTimer = nil
         timer?.invalidate()
         timer = nil
-        if usesGPS { locationManager.stopUpdatingLocation() }
+        if usesGPS { locationManager.stopUpdatingLocation(); locationManager.stopUpdatingHeading() }
 
         // Pause the HK session so collection stops but the builder stays usable
         // for either save or discard.
@@ -749,6 +755,9 @@ final class WorkoutManager: NSObject, ObservableObject {
         hasGPSFix = false
         routePointCount = 0
         routeCoordinates = []
+        distanceToStart = 0
+        bearingToStart = 0
+        currentHeading = 0
         currentCadence = 0
         currentRunningPower = 0
         currentStrideLength = 0
@@ -838,7 +847,27 @@ extension WorkoutManager: CLLocationManagerDelegate {
             }
             self.routePointCount += good.count
             self.routeCoordinates.append(contentsOf: good.map { $0.coordinate })
+
+            // Back-to-start: straight-line distance + bearing from here to the start.
+            if let latest = good.last, let startC = self.routeCoordinates.first {
+                let startLoc = CLLocation(latitude: startC.latitude, longitude: startC.longitude)
+                self.distanceToStart = latest.distance(from: startLoc)
+                self.bearingToStart = Self.bearing(from: latest.coordinate, to: startC)
+            }
         }
+    }
+
+    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
+        let h = newHeading.trueHeading >= 0 ? newHeading.trueHeading : newHeading.magneticHeading
+        Task { @MainActor in self.currentHeading = h }
+    }
+
+    private static func bearing(from: CLLocationCoordinate2D, to: CLLocationCoordinate2D) -> Double {
+        let lat1 = from.latitude * .pi / 180, lat2 = to.latitude * .pi / 180
+        let dLon = (to.longitude - from.longitude) * .pi / 180
+        let y = sin(dLon) * cos(lat2)
+        let x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
+        return (atan2(y, x) * 180 / .pi + 360).truncatingRemainder(dividingBy: 360)
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
