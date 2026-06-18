@@ -567,6 +567,16 @@ struct DashboardView: View {
                             }
                         }
                     }
+                    let cf = MetricsEngine.cardioFitnessLevel(
+                        vo2max: vo2, age: vm.userProfile?.age ?? 30, isMale: vm.userProfile?.isMale ?? true)
+                    HStack(spacing: 4) {
+                        Text("심폐체력")
+                            .font(.system(size: 9)).foregroundStyle(DS.dimText)
+                        Text(cf.tier)
+                            .font(.system(size: 11, weight: .bold)).foregroundStyle(DS.green)
+                        Text(cf.detail)
+                            .font(.system(size: 8)).foregroundStyle(DS.dimText)
+                    }
                 } else {
                     Text("VO2max 데이터 없음")
                         .foregroundStyle(.secondary).font(.caption)

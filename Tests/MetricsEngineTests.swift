@@ -150,4 +150,25 @@ final class MetricsEngineTests: XCTestCase {
         let te = MetricsEngine.trainingEffect(zoneSeconds: [10, 20])
         XCTAssertEqual(te.label, "데이터 없음")
     }
+
+    // MARK: - Cardio fitness level
+
+    func testExpectedVO2maxInterpolates() {
+        // Male age 35 sits between (30,44) and (40,41) → ~42.5
+        XCTAssertEqual(MetricsEngine.expectedVO2max(age: 35, isMale: true), 42.5, accuracy: 0.01)
+        // Clamps below youngest / above oldest bracket
+        XCTAssertEqual(MetricsEngine.expectedVO2max(age: 18, isMale: true), 47, accuracy: 0.01)
+        XCTAssertEqual(MetricsEngine.expectedVO2max(age: 90, isMale: false), 22, accuracy: 0.01)
+    }
+
+    func testCardioFitnessTiers() {
+        // Well above age-norm → 최상위
+        XCTAssertEqual(MetricsEngine.cardioFitnessLevel(vo2max: 60, age: 40, isMale: true).tier, "최상위")
+        // At norm → 양호
+        XCTAssertEqual(MetricsEngine.cardioFitnessLevel(vo2max: 41, age: 40, isMale: true).tier, "양호")
+        // Far below → 매우 낮음
+        XCTAssertEqual(MetricsEngine.cardioFitnessLevel(vo2max: 20, age: 40, isMale: true).tier, "매우 낮음")
+        // No data
+        XCTAssertEqual(MetricsEngine.cardioFitnessLevel(vo2max: 0, age: 40, isMale: true).tier, "--")
+    }
 }

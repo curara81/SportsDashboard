@@ -574,6 +574,42 @@ struct MetricsEngine {
         return min(actualAge + 10, 80)
     }
 
+    // MARK: - Cardio Fitness Level (VO2max → tier vs age/sex norm)
+
+    /// Age/sex normative mean VO2max (≈50th percentile), interpolated.
+    static func expectedVO2max(age: Int, isMale: Bool) -> Double {
+        let male: [(Int, Double)] = [(20, 47), (30, 44), (40, 41), (50, 37), (60, 33), (70, 28.5)]
+        let female: [(Int, Double)] = [(20, 40), (30, 37), (40, 34), (50, 30), (60, 26), (70, 22)]
+        let norms = isMale ? male : female
+        if age <= norms.first!.0 { return norms.first!.1 }
+        if age >= norms.last!.0 { return norms.last!.1 }
+        for i in 0..<(norms.count - 1) {
+            let lo = norms[i], hi = norms[i + 1]
+            if age >= lo.0 && age <= hi.0 {
+                let f = Double(age - lo.0) / Double(hi.0 - lo.0)
+                return lo.1 + (hi.1 - lo.1) * f
+            }
+        }
+        return norms.last!.1
+    }
+
+    /// Maps VO2max to a 6-tier cardio-fitness label relative to the age/sex norm.
+    static func cardioFitnessLevel(vo2max: Double, age: Int, isMale: Bool) -> (tier: String, detail: String) {
+        let norm = expectedVO2max(age: age, isMale: isMale)
+        guard norm > 0, vo2max > 0 else { return ("--", "데이터 부족") }
+        let r = vo2max / norm
+        let tier: String
+        switch r {
+        case 1.25...: tier = "최상위"
+        case 1.10..<1.25: tier = "우수"
+        case 0.95..<1.10: tier = "양호"
+        case 0.85..<0.95: tier = "보통"
+        case 0.70..<0.85: tier = "낮음"
+        default: tier = "매우 낮음"
+        }
+        return (tier, "또래 평균 \(Int(norm.rounded())) 대비")
+    }
+
     // MARK: - Training Effect (aerobic / anaerobic, 0.0–5.0)
 
     struct TrainingEffect {
