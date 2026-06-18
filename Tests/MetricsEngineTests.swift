@@ -181,4 +181,16 @@ final class MetricsEngineTests: XCTestCase {
         let g = MetricsEngine.dailyGuidance(recentAvgLoad: 50, readiness: 100, tsb: 0)
         XCTAssertGreaterThan(g.targetLoadHigh, g.targetLoadLow)
     }
+
+    // MARK: - VDOT race prediction
+
+    func testVDOTRacePrediction() {
+        // Daniels VDOT 50 → 5K ≈ 19:57 (~1197s); allow a plausible band.
+        let t5k = MetricsEngine.vdotRaceTime(vdot: 50, distanceMeters: 5000)
+        XCTAssertTrue(t5k > 1080 && t5k < 1320, "5K@VDOT50 ~20min, got \(t5k)")
+        // 10K takes longer than 5K; higher VDOT is faster.
+        XCTAssertGreaterThan(MetricsEngine.vdotRaceTime(vdot: 50, distanceMeters: 10000), t5k)
+        XCTAssertLessThan(MetricsEngine.vdotRaceTime(vdot: 60, distanceMeters: 5000), t5k)
+        XCTAssertEqual(MetricsEngine.vdotRaceTime(vdot: 0, distanceMeters: 5000), 0)
+    }
 }

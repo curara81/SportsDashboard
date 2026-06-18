@@ -6,6 +6,7 @@ struct RacePredictionView: View {
     @State private var recentSeconds: Int = 0
     @State private var autoFilled = false
     @State private var didLoad = false
+    @State private var vdot: Double = 0
 
     private let distances: [(name: String, km: Double)] = [
         ("5K", 5.0), ("10K", 10.0), ("하프", 21.0975), ("풀", 42.195)
@@ -29,6 +30,7 @@ struct RacePredictionView: View {
 
                 inputCard
                 resultCards
+                vdotCard
                 paceCard
             }
             .padding(.horizontal, 6)
@@ -36,6 +38,9 @@ struct RacePredictionView: View {
         .task {
             guard !didLoad else { return }
             didLoad = true
+            if let vo2 = try? await HealthKitManager.shared.fetchVO2max(), let last = vo2.last?.value {
+                vdot = last
+            }
             if let best = try? await HealthKitManager.shared.fetchBestRecentRun() {
                 // Snap distance to the nearest standard bucket for the picker.
                 let snapped = distances.min(by: { abs($0.km - best.distanceKm) < abs($1.km - best.distanceKm) })?.km ?? 5.0
@@ -47,6 +52,34 @@ struct RacePredictionView: View {
                 autoFilled = true
             }
         }
+    }
+
+    @ViewBuilder private var vdotCard: some View {
+        if vdot > 0 {
+            CardView {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("VO2max 기반 예측 (VDOT \(Int(vdot)))", systemImage: "lungs.fill")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color(white: 0.55))
+                    ForEach(distances, id: \.km) { d in
+                        HStack {
+                            Text(d.name)
+                                .font(.system(size: 12, weight: .semibold))
+                                .frame(width: 44, alignment: .leading)
+                            Spacer()
+                            Text(formatRaceTime(MetricsEngine.vdotRaceTime(vdot: vdot, distanceMeters: d.km * 1000)))
+                                .font(.system(size: 15, weight: .bold, design: .monospaced))
+                                .foregroundStyle(Color(red: 0.3, green: 0.8, blue: 0.85))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func formatRaceTime(_ s: TimeInterval) -> String {
+        let h = Int(s) / 3600, m = (Int(s) % 3600) / 60, sec = Int(s) % 60
+        return h > 0 ? String(format: "%d:%02d:%02d", h, m, sec) : String(format: "%d:%02d", m, sec)
     }
 
     private var inputCard: some View {

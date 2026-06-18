@@ -269,6 +269,29 @@ struct MetricsEngine {
         knownTime * pow(targetDistance / knownDistance, fatigueExponent)
     }
 
+    // MARK: - Daniels VDOT race prediction (VO2max-based)
+
+    /// Predicts race time for a distance from VDOT (≈ running VO2max), via Daniels'
+    /// VO2-demand vs sustainable-%VO2max model. Binary-searches the time where the
+    /// VO2 cost of the average race velocity equals the VO2 sustainable for that time.
+    static func vdotRaceTime(vdot: Double, distanceMeters: Double) -> TimeInterval {
+        guard vdot > 0, distanceMeters > 0 else { return 0 }
+        func vo2(_ vMetersPerMin: Double) -> Double {
+            -4.60 + 0.182258 * vMetersPerMin + 0.000104 * vMetersPerMin * vMetersPerMin
+        }
+        func pctMax(_ tMin: Double) -> Double {
+            0.8 + 0.1894393 * exp(-0.012778 * tMin) + 0.2989558 * exp(-0.1932605 * tMin)
+        }
+        var lo = 1.0, hi = 600.0   // minutes
+        for _ in 0..<80 {
+            let t = (lo + hi) / 2
+            let v = distanceMeters / t   // m/min
+            if vo2(v) > vdot * pctMax(t) { lo = t } else { hi = t }
+            if hi - lo < 0.005 { break }
+        }
+        return (lo + hi) / 2 * 60.0   // seconds
+    }
+
     // MARK: - Lucia TRIMP (3-zone ventilatory threshold)
 
     static func calculateLuciaTRIMP(
