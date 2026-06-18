@@ -222,6 +222,9 @@ struct ActiveWorkoutView: View {
             if manager.fatPercent > 0 {
                 burnerPage.tag(11)   // live fat/carb
             }
+            if manager.workoutType == .running && manager.elapsedSeconds > 360 {
+                decouplingPage.tag(12)   // aerobic durability (after baseline window)
+            }
             elevationPage.tag(4)
             if manager.workoutType.usePace {
                 projectionPage.tag(9)   // live finish-time projection
@@ -451,6 +454,21 @@ struct ActiveWorkoutView: View {
                 miniMetric("오르막", "\(Int(manager.totalAscent))", Color(red: 1, green: 0.5, blue: 0.3))
                 miniMetric("내리막", "\(Int(manager.totalDescent))", Color(red: 0.35, green: 0.65, blue: 1.0))
             }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Cardiac decoupling — aerobic durability (HR-efficiency drift vs early baseline).
+    private var decouplingPage: some View {
+        let d = manager.aerobicDecoupling
+        let color = d < 5 ? Color(red: 0.3, green: 0.85, blue: 0.45)
+            : (d < 10 ? Color(red: 1, green: 0.65, blue: 0.2) : Color(red: 1, green: 0.4, blue: 0.4))
+        return VStack(spacing: 6) {
+            bigField("심박 디커플링", String(format: "%+.1f", d), "%", color: color)
+            Text(d < 5 ? "유산소 안정" : d < 10 ? "약간 드리프트" : "피로 누적")
+                .font(.system(size: 12, weight: .semibold)).foregroundStyle(color)
+            Text("초반 대비 심박 효율 변화")
+                .font(.system(size: 10)).foregroundStyle(Color(white: 0.5))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

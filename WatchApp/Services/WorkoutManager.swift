@@ -47,6 +47,7 @@ final class WorkoutManager: NSObject, ObservableObject {
     @Published var currentAltitude: Double = 0     // meters
     @Published var currentGrade: Double = 0        // slope, decimal (0.05 = 5%)
     @Published var gradeAdjustedPace: Double = 0   // GAP, seconds per km
+    @Published var aerobicDecoupling: Double = 0   // % HR-efficiency drift vs early baseline
     @Published var gpsAccuracy: CLLocationAccuracy = -1  // <0 = no fix yet
     @Published var hasGPSFix = false
     @Published var routePointCount = 0
@@ -192,6 +193,8 @@ final class WorkoutManager: NSObject, ObservableObject {
     private var hrSamples: [Double] = []
     private var lastAltitude: Double?           // for ascent/descent delta
     private var lastGradeLocation: CLLocation?  // for grade (GAP) computation
+    private var baselineEF: Double = 0          // early efficiency factor (speed/HR)
+    private var efEMA: Double = 0               // smoothed current efficiency factor
     private var usesGPS = false                 // outdoor sports only
 
     private let hapticCooldown: TimeInterval = 10
@@ -699,6 +702,18 @@ final class WorkoutManager: NSObject, ObservableObject {
             virtualPartnerGapSeconds = gap * (targetPacePerKm / 1000.0)  // m → s at target pace
         }
 
+        // Cardiac decoupling (aerobic durability): efficiency drift vs early baseline.
+        if currentHeartRate > 0 && currentSpeed > 0 {
+            let ef = currentSpeed / currentHeartRate
+            efEMA = efEMA == 0 ? ef : efEMA * 0.9 + ef * 0.1
+            if baselineEF == 0 && elapsedSeconds > 180 && elapsedSeconds < 360 {
+                baselineEF = efEMA      // lock baseline after warmup (3–6 min)
+            }
+            if baselineEF > 0 {
+                aerobicDecoupling = (baselineEF - efEMA) / baselineEF * 100
+            }
+        }
+
         // Structured interval plan: advance step when its goal is met
         advancePlanIfNeeded()
 
@@ -762,7 +777,10 @@ final class WorkoutManager: NSObject, ObservableObject {
         currentAltitude = 0
         currentGrade = 0
         gradeAdjustedPace = 0
+        aerobicDecoupling = 0
         lastGradeLocation = nil
+        baselineEF = 0
+        efEMA = 0
         gpsAccuracy = -1
         hasGPSFix = false
         routePointCount = 0
