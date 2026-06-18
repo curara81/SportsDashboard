@@ -19,6 +19,7 @@ struct FlyoverReplayView: View {
     private let camDist: Double
     private let accent: Color
     private let accentUI: UIColor
+    private let highlights: [FlyoverHighlight]
 
     @State private var camera: MapCameraPosition = .automatic
     @State private var progress: Double = 0      // 0…1 along the route
@@ -43,6 +44,7 @@ struct FlyoverReplayView: View {
         let (c, u) = FlyoverRoute.colors(for: workoutType)
         self.accent = c
         self.accentUI = u
+        self.highlights = FlyoverHighlight.compute(from: locations)
     }
 
     var body: some View {
@@ -86,6 +88,18 @@ struct FlyoverReplayView: View {
                     .frame(width: 13, height: 13)
                     .overlay(Circle().stroke(.white, lineWidth: 2))
             }
+            // Auto-detected highlight markers (fastest km, biggest climb).
+            ForEach(highlights) { h in
+                Annotation("", coordinate: h.coord) {
+                    Image(systemName: h.icon)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(5)
+                        .background(h.tint, in: Circle())
+                        .overlay(Circle().stroke(.white, lineWidth: 1.5))
+                }
+            }
+
             Annotation("", coordinate: headCoord) {
                 ZStack {
                     Circle().fill(.white).frame(width: 18, height: 18)
@@ -102,13 +116,30 @@ struct FlyoverReplayView: View {
     // MARK: Overlay UI
 
     private var overlay: some View {
-        VStack {
+        VStack(spacing: 6) {
             titleChip
+            if !highlights.isEmpty {
+                highlightsBar
+            }
             Spacer()
             controlPanel
         }
         .padding(.horizontal, 14)
         .padding(.bottom, 8)
+    }
+
+    private var highlightsBar: some View {
+        HStack(spacing: 6) {
+            ForEach(highlights) { h in
+                HStack(spacing: 4) {
+                    Image(systemName: h.icon).font(.system(size: 10, weight: .bold)).foregroundStyle(h.tint)
+                    Text(h.label).font(.system(size: 11, weight: .semibold))
+                }
+                .padding(.horizontal, 8).padding(.vertical, 5)
+                .background(.ultraThinMaterial, in: Capsule())
+            }
+            Spacer()
+        }
     }
 
     private var titleChip: some View {
@@ -528,6 +559,60 @@ final class FlyoverVideoExporter: ObservableObject {
 struct FlyoverShareItem: Identifiable {
     let id = UUID()
     let url: URL
+}
+
+// MARK: - Auto-highlights
+
+struct FlyoverHighlight: Identifiable {
+    let id = UUID()
+    let coord: CLLocationCoordinate2D
+    let icon: String
+    let label: String
+    let tint: Color
+
+    /// Detects narrative beats from the raw route: fastest 1 km + biggest 400 m climb.
+    static func compute(from locs: [CLLocation]) -> [FlyoverHighlight] {
+        guard locs.count >= 3 else { return [] }
+        var cum = [0.0]
+        for i in 1..<locs.count { cum.append(cum[i - 1] + locs[i].distance(from: locs[i - 1])) }
+        var out: [FlyoverHighlight] = []
+
+        // Fastest 1 km window
+        var bestPace = Double.greatestFiniteMagnitude, fastMid = 0, j = 0
+        for i in 0..<locs.count {
+            if j < i { j = i }
+            while j < locs.count && cum[j] - cum[i] < 1000 { j += 1 }
+            if j >= locs.count { break }
+            let dt = locs[j].timestamp.timeIntervalSince(locs[i].timestamp)
+            let dd = cum[j] - cum[i]
+            if dd > 0, dt > 0 {
+                let pace = dt / (dd / 1000.0)
+                if pace < bestPace { bestPace = pace; fastMid = (i + j) / 2 }
+            }
+        }
+        if bestPace < .greatestFiniteMagnitude {
+            let m = Int(bestPace) / 60, s = Int(bestPace) % 60
+            out.append(.init(coord: locs[fastMid].coordinate, icon: "hare.fill",
+                             label: String(format: "최고 %d:%02d/km", m, s),
+                             tint: Color(red: 0.3, green: 0.85, blue: 0.45)))
+        }
+
+        // Biggest 400 m climb
+        var bestGain = 0.0, climbMid = 0, k = 0
+        for i in 0..<locs.count {
+            if k < i { k = i }
+            while k < locs.count && cum[k] - cum[i] < 400 { k += 1 }
+            if k >= locs.count { break }
+            let gain = locs[k].altitude - locs[i].altitude
+            if gain > bestGain { bestGain = gain; climbMid = (i + k) / 2 }
+        }
+        if bestGain > 5 {
+            out.append(.init(coord: locs[climbMid].coordinate, icon: "mountain.2.fill",
+                             label: "최대 오르막 +\(Int(bestGain))m",
+                             tint: Color(red: 1, green: 0.55, blue: 0.2)))
+        }
+        return out
+    }
 }
 
 struct ActivityView: UIViewControllerRepresentable {
