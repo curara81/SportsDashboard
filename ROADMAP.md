@@ -36,11 +36,12 @@ watch app installs from Xcode (scheme **SportsDashboard Watch App** → your App
 - ⬜ Per-step pace/HR targets for interval steps (IntervalStep.targetPace exists; wire alerts)
 - ⬜ On-watch interval builder UI (presets exist; add custom builder)
 
-## ⬜ Phase 3 — navigation
-- GPX course load + turn-by-turn + off-route haptic alert (cross-track distance vs polyline)
-- ClimbPro: pre-segment route elevation into climbs, live remaining grade/ascent
-- Back-to-Start / TracBack (bearing + distance to start)
-- Route Roulette: generate a loop of target distance from current location (MapKit)
+## 🔨 Phase 3 — navigation
+- ✅ Back-to-Start / TracBack (compass arrow + straight-line distance, no course needed)
+- ⬜ **GPX course infra** (needs iPhone import + WatchConnectivity sync + course store) ← big
+- ⬜ Course turn-by-turn + off-route haptic alert (cross-track distance vs polyline)
+- ⬜ ClimbPro (pre-segment loaded route elevation into climbs; live remaining grade/ascent)
+- ⬜ Route Roulette (generate a target-distance loop from current location, MapKit)
 
 ## ⬜ Phase 4 — intelligence
 - Target Load (daily how-much-to-train band) + deterministic Daily Run recommendation
