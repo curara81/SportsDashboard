@@ -104,6 +104,10 @@ final class WorkoutManager: NSObject, ObservableObject {
     // Auto-pause tracking
     private var lowSpeedSeconds = 0
     private var lastMetricDistance: Double = 0
+    // Paused-time accounting (so the displayed timer freezes during pause/auto-pause
+    // and resumes without jumping by the paused gap).
+    private var totalPausedDuration: TimeInterval = 0
+    private var pauseStartedAt: Date?
 
     // MARK: - Workout Type
 
@@ -386,17 +390,31 @@ final class WorkoutManager: NSObject, ObservableObject {
     // MARK: - Pause / Resume
 
     func pause() {
-        session?.pause()
         isPaused = true
+        beginPauseAccounting()
+        session?.pause()
         if usesGPS { locationManager.stopUpdatingLocation() }
         playHaptic(1) // stop
     }
 
     func resume() {
-        session?.resume()
         isPaused = false
+        endPauseAccountingIfNeeded()
+        session?.resume()
         if usesGPS { locationManager.startUpdatingLocation() }
         playHaptic(0) // start
+    }
+
+    /// Start counting paused time (idempotent across manual + auto pause).
+    private func beginPauseAccounting() {
+        if pauseStartedAt == nil { pauseStartedAt = Date() }
+    }
+
+    /// Add the elapsed pause gap once NEITHER manual nor auto pause is active.
+    private func endPauseAccountingIfNeeded() {
+        guard !isPaused, !isAutoPaused, let p = pauseStartedAt else { return }
+        totalPausedDuration += Date().timeIntervalSince(p)
+        pauseStartedAt = nil
     }
 
     func togglePause() {
@@ -489,9 +507,13 @@ final class WorkoutManager: NSObject, ObservableObject {
     private func startTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                guard let self, let start = self.startDate, !self.isPaused else { return }
-                self.elapsedSeconds = Date().timeIntervalSince(start)
-                self.updateMetrics()
+                guard let self, let start = self.startDate else { return }
+                // Freeze the timer while paused/auto-paused; subtract accumulated pause.
+                if !self.isPaused && !self.isAutoPaused {
+                    self.elapsedSeconds = Date().timeIntervalSince(start) - self.totalPausedDuration
+                }
+                // Keep running metrics while auto-paused so movement can auto-resume.
+                if !self.isPaused { self.updateMetrics() }
             }
         }
     }
@@ -575,11 +597,16 @@ final class WorkoutManager: NSObject, ObservableObject {
             if movedThisTick < 0.5 {            // <0.5 m in 1s ≈ stopped
                 lowSpeedSeconds += 1
                 if lowSpeedSeconds >= 3 && !isAutoPaused {
-                    isAutoPaused = true
+                    isAutoPaused = true        // freezes the timer (display only; GPS stays on)
+                    beginPauseAccounting()
                     playHaptic(1)
                 }
             } else {
-                if isAutoPaused { isAutoPaused = false; playHaptic(0) }
+                if isAutoPaused {
+                    isAutoPaused = false
+                    endPauseAccountingIfNeeded()
+                    playHaptic(0)
+                }
                 lowSpeedSeconds = 0
             }
         }
@@ -733,6 +760,8 @@ final class WorkoutManager: NSObject, ObservableObject {
         currentLapSeconds = 0
         zoneSeconds = [0, 0, 0, 0, 0]
         isAutoPaused = false
+        totalPausedDuration = 0
+        pauseStartedAt = nil
         activePlan = nil
         planStepIndex = -1
         planStepLabel = ""
