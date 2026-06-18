@@ -26,6 +26,7 @@ targets:
       - path: WatchApp/Views/HRZonesView.swift
       - path: WatchApp/Views/WeeklyTrendView.swift
       - path: WatchApp/Views/RunningDynamicsView.swift
+      - path: WatchApp/Views/FlyoverReplayView.swift
       - path: WatchApp/ViewModels/DashboardViewModel.swift
     settings:
       base:
@@ -35,8 +36,12 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: false
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: P469A874Y6
+        DEVELOPMENT_TEAM: GFJK8DP9ZC
         TARGETED_DEVICE_FAMILY: "1"
+    entitlements:
+      path: iOSApp/SportsDashboard.entitlements
+      properties:
+        com.apple.developer.healthkit: true
     dependencies:
       - sdk: HealthKit.framework
       - sdk: SwiftData.framework
@@ -69,7 +74,7 @@ targets:
         SKIP_INSTALL: false
         INSTALL_PATH: "$(LOCAL_APPS_DIR)"
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: P469A874Y6
+        DEVELOPMENT_TEAM: GFJK8DP9ZC
     entitlements:
       path: WatchApp/SportsDashboard.entitlements
       properties:
