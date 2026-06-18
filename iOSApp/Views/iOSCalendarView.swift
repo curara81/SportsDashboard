@@ -4,9 +4,11 @@ import HealthKit
 /// Month calendar marking workout days (colored dot) and high-step days (green ring).
 struct iOSCalendarView: View {
     @State private var monthAnchor = Calendar.current.startOfDay(for: Date())
-    @State private var workoutDays: Set<Date> = []
+    @State private var workouts: [HKWorkout] = []
     @State private var stepsByDay: [Date: Double] = [:]
     @State private var loading = true
+
+    private var workoutDays: Set<Date> { Set(workouts.map { cal.startOfDay(for: $0.startDate) }) }
 
     private let cal = Calendar.current
     private let stepGoal = 10000.0
@@ -54,7 +56,16 @@ struct iOSCalendarView: View {
         LazyVGrid(columns: cols, spacing: 8) {
             ForEach(monthCells, id: \.self) { day in
                 if let day {
-                    dayCell(day)
+                    NavigationLink {
+                        DayDetailView(
+                            date: day,
+                            workouts: workouts.filter { cal.isDate($0.startDate, inSameDayAs: day) }
+                                .sorted { $0.startDate < $1.startDate },
+                            steps: stepsByDay[day] ?? 0)
+                    } label: {
+                        dayCell(day)
+                    }
+                    .buttonStyle(.plain)
                 } else {
                     Color.clear.frame(height: 44)
                 }
@@ -126,12 +137,60 @@ struct iOSCalendarView: View {
     private func load() async {
         loading = true
         let ws = (try? await HealthKitManager.shared.fetchWorkouts(daysBack: 400)) ?? []
-        let days = Set(ws.map { cal.startOfDay(for: $0.startDate) })
         let steps = await HealthKitManager.shared.fetchDailySteps(daysBack: 400)
         await MainActor.run {
-            self.workoutDays = days
+            self.workouts = ws
             self.stepsByDay = steps
             self.loading = false
         }
+    }
+}
+
+/// One day's detail: step count + that day's workouts (each → route/flyover detail).
+struct DayDetailView: View {
+    let date: Date
+    let workouts: [HKWorkout]
+    let steps: Double
+
+    var body: some View {
+        List {
+            Section {
+                HStack {
+                    Label("걸음 수", systemImage: "figure.walk")
+                    Spacer()
+                    Text("\(Int(steps)) 보").fontWeight(.semibold)
+                }
+            }
+
+            if workouts.isEmpty {
+                Section { Text("이 날 운동 기록 없음").foregroundStyle(.secondary) }
+            } else {
+                Section("운동") {
+                    ForEach(workouts, id: \.uuid) { w in
+                        NavigationLink {
+                            WorkoutDetailView(workout: w)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text(w.workoutActivityType.name).fontWeight(.semibold)
+                                    Spacer()
+                                    Text(w.startDate.formatted(.dateTime.hour().minute()))
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                HStack(spacing: 14) {
+                                    let km = TrainingHistoryView.distanceKm(w)
+                                    if km > 0 { Text(String(format: "%.2f km", km)) }
+                                    Text("\(Int(w.duration / 60))분")
+                                    if let hr = TrainingHistoryView.avgHR(w) { Text("\(Int(hr)) bpm") }
+                                }
+                                .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle(date.formatted(.dateTime.month().day().weekday()))
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
