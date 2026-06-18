@@ -574,6 +574,32 @@ struct MetricsEngine {
         return min(actualAge + 10, 80)
     }
 
+    // MARK: - Daily guidance (Target Load + recommended run)
+
+    struct DailyGuidance {
+        let targetLoadLow: Int
+        let targetLoadHigh: Int
+        let recommendation: String
+        let detail: String
+    }
+
+    /// Today's target training-load band + a recommended session, from chronic load
+    /// (recentAvgLoad ≈ CTL) scaled by readiness, plus a session pick from readiness/TSB.
+    static func dailyGuidance(recentAvgLoad: Double, readiness: Double, tsb: Double) -> DailyGuidance {
+        let rf = 0.5 + max(0, min(readiness, 100)) / 100.0   // 0.5 … 1.5
+        let center = max(recentAvgLoad, 0) * rf
+        let low = Int((center * 0.8).rounded())
+        let high = Int((center * 1.2).rounded())
+        let rec: String
+        if readiness >= 80 && tsb > -5 { rec = "고강도 (인터벌·템포)" }
+        else if readiness >= 60 { rec = "중강도 지속주" }
+        else if readiness >= 40 { rec = "가벼운 회복 조깅" }
+        else { rec = "휴식 권장" }
+        return DailyGuidance(targetLoadLow: low, targetLoadHigh: high,
+                             recommendation: rec,
+                             detail: "준비도 \(Int(readiness)) · 목표 부하 \(low)~\(high)")
+    }
+
     // MARK: - Cardio Fitness Level (VO2max → tier vs age/sex norm)
 
     /// Age/sex normative mean VO2max (≈50th percentile), interpolated.

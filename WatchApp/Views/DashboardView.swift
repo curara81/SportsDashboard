@@ -101,6 +101,7 @@ struct DashboardView: View {
                 Text(error).font(.caption2).foregroundStyle(.secondary).padding()
             } else {
                 dashPage { readinessCard }
+                dashPage { guidanceCard }
                 NavigationLink { WeeklyTrendView(loads: vm.recentLoads) } label: { dashPage { trainingBalanceCard } }
                     .buttonStyle(.plain)
                 dashPage { acwrCard }
@@ -526,6 +527,31 @@ struct DashboardView: View {
                     StatusBadge(label: trainingStatusBadge(vm.trainingStatus))
                 }
             }
+        }
+    }
+
+    // MARK: - Daily Guidance (Target Load + recommended run)
+
+    private var guidanceCard: some View {
+        let g = MetricsEngine.dailyGuidance(
+            recentAvgLoad: vm.trainingBalance?.ctl ?? 0,
+            readiness: vm.readiness?.score ?? 0,
+            tsb: vm.trainingBalance?.tsb ?? 0)
+        return CardView {
+            VStack(alignment: .leading, spacing: 6) {
+                Label("오늘의 추천", systemImage: "figure.run.circle")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(DS.dimText)
+                Text(g.recommendation)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(DS.green)
+                Text("목표 부하 \(g.targetLoadLow)~\(g.targetLoadHigh)")
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                Text("준비도 기반 · 오늘 적정 훈련량")
+                    .font(.system(size: 9))
+                    .foregroundStyle(DS.dimText)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 

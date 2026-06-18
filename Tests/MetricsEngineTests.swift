@@ -171,4 +171,14 @@ final class MetricsEngineTests: XCTestCase {
         // No data
         XCTAssertEqual(MetricsEngine.cardioFitnessLevel(vo2max: 0, age: 40, isMale: true).tier, "--")
     }
+
+    // MARK: - Daily guidance
+
+    func testDailyGuidance() {
+        XCTAssertEqual(MetricsEngine.dailyGuidance(recentAvgLoad: 50, readiness: 85, tsb: 0).recommendation, "고강도 (인터벌·템포)")
+        XCTAssertEqual(MetricsEngine.dailyGuidance(recentAvgLoad: 50, readiness: 65, tsb: 0).recommendation, "중강도 지속주")
+        XCTAssertEqual(MetricsEngine.dailyGuidance(recentAvgLoad: 50, readiness: 30, tsb: -20).recommendation, "휴식 권장")
+        let g = MetricsEngine.dailyGuidance(recentAvgLoad: 50, readiness: 100, tsb: 0)
+        XCTAssertGreaterThan(g.targetLoadHigh, g.targetLoadLow)
+    }
 }
