@@ -328,7 +328,7 @@ final class WorkoutManager: NSObject, ObservableObject {
         isPaused ? resume() : pause()
     }
 
-    // MARK: - End Workout (Garmin-style: stop → summary → save/discard)
+    // MARK: - End Workout (stop → summary → save/discard)
 
     /// Stops live tracking and shows the summary screen. Does NOT yet write to
     /// HealthKit — the user chooses 저장(save) or 삭제(discard) from the summary.
@@ -385,10 +385,10 @@ final class WorkoutManager: NSObject, ObservableObject {
                     } else if route != nil {
                         print("Route attached to workout ✓")
                     }
-                    // Strava/Garmin/Nike 등 외부 앱 연동은 직접 API 불필요:
-                    // HKWorkout이 건강 앱에 저장되면 스트라바의 "Apple Health 연결"이
-                    // 자동으로 가져감. 우리는 풍부한 HKWorkout(거리/HR/칼로리/route)만
-                    // 잘 쓰면 됨.
+                    // 외부 운동 앱 연동은 직접 API 불필요:
+                    // HKWorkout이 건강 앱에 저장되면 Apple 건강 연동을 지원하는
+                    // 외부 앱이 자동으로 가져감. 우리는 풍부한 HKWorkout
+                    // (거리/HR/칼로리/route)만 잘 쓰면 됨.
                 }
             }
         }
@@ -598,7 +598,7 @@ final class WorkoutManager: NSObject, ObservableObject {
 
 extension WorkoutManager: CLLocationManagerDelegate {
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        // Filter to recent, accurate fixes (Garmin-style: drop bad GPS points).
+        // Filter to recent, accurate fixes (drop bad GPS points).
         let now = Date()
         let good = locations.filter {
             $0.horizontalAccuracy >= 0 &&

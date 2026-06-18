@@ -395,7 +395,7 @@ struct ActiveWorkoutView: View {
         }
     }
 
-    // MARK: - Live Map Page (Garmin-style real-time route + position)
+    // MARK: - Live Map Page (real-time route + position)
 
     private var mapPage: some View {
         ZStack(alignment: .bottom) {
@@ -907,7 +907,7 @@ struct ActiveWorkoutView: View {
     }
 }
 
-// MARK: - Workout Summary (저장 / 삭제 prompt — Garmin-style)
+// MARK: - Workout Summary (저장 / 삭제 prompt)
 
 struct WorkoutSummaryView: View {
     @ObservedObject var manager: WorkoutManager

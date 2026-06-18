@@ -5,7 +5,7 @@ import CoreLocation
 import AVFoundation
 import UIKit
 
-// MARK: - Flyover Replay (Garmin / Relive style route playback + video export)
+// MARK: - Flyover Replay (animated route playback + video export)
 
 /// Full-screen cinematic replay of a finished workout's GPS route.
 /// - In-app: animated camera that follows the route as a colored polyline grows.

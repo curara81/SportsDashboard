@@ -392,7 +392,7 @@ struct MetricsEngine {
         return ((avgSecond - avgFirst) / avgFirst) * 100
     }
 
-    // MARK: - Training Status (Garmin-style 8 levels)
+    // MARK: - Training Status (8 levels)
 
     enum TrainingStatus: String {
         case peaking = "피킹"
@@ -582,9 +582,9 @@ struct MetricsEngine {
         let label: String        // benefit description
     }
 
-    /// Approximate Garmin/Firstbeat-style Training Effect from time-in-zone.
+    /// Approximate aerobic/anaerobic Training Effect from time-in-zone.
     /// Aerobic TE rises with total sustained Z2–Z4 time; anaerobic TE rises with
-    /// Z4–Z5 (high-intensity) time. Not Firstbeat-exact, but a defensible proxy.
+    /// Z4–Z5 (high-intensity) time. A heuristic proxy, not a validated lab measure.
     /// zoneSeconds: [Z1,Z2,Z3,Z4,Z5] seconds.
     static func trainingEffect(zoneSeconds: [TimeInterval]) -> TrainingEffect {
         guard zoneSeconds.count == 5 else {

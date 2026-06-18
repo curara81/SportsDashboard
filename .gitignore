@@ -12,3 +12,7 @@ Pods/
 *.hmap
 *.gcno
 *.gcda
+
+# internal planning / audit artifacts (kept local, not published)
+.garmin_inv.json
+GARMIN_ROADMAP.md
