@@ -133,7 +133,7 @@ final class MetricsEngineTests: XCTestCase {
 
     func testTrainingEffectHighIntensityDominatesAnaerobic() {
         // 30 min in Z5 → anaerobic TE high and above aerobic
-        let te = MetricsEngine.trainingEffect(zoneSeconds: [0, 0, 0, 0, 30 * 60])
+        let te = MetricsEngine.trainingEffect(zoneSeconds: [0, 0, 0, 0, 1800])
         XCTAssertGreaterThan(te.anaerobic, te.aerobic)
         XCTAssertGreaterThan(te.anaerobic, 4.0)
         XCTAssertLessThanOrEqual(te.anaerobic, 5.0)
