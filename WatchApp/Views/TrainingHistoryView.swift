@@ -1,12 +1,14 @@
 import SwiftUI
 import CoreLocation
+import HealthKit
 
+/// Lists actual HealthKit workouts (what Apple Fitness shows), newest first, so a
+/// just-saved run always appears — independent of the daily training-load pipeline.
 struct TrainingHistoryView: View {
-    let loads: [DailyTrainingLoad]
+    var loads: [DailyTrainingLoad] = []   // kept for call-site compatibility (unused here)
 
-    private var recentWorkouts: [DailyTrainingLoad] {
-        loads.filter { $0.trimp > 0 }.sorted { $0.date > $1.date }.prefix(10).map { $0 }
-    }
+    @State private var workouts: [HKWorkout] = []
+    @State private var loading = true
 
     var body: some View {
         ScrollView {
@@ -14,7 +16,10 @@ struct TrainingHistoryView: View {
                 Text("운동 기록")
                     .font(.system(size: 17, weight: .bold))
 
-                if recentWorkouts.isEmpty {
+                if loading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, minHeight: 80)
+                } else if workouts.isEmpty {
                     CardView {
                         Text("운동 기록 없음")
                             .font(.caption)
@@ -22,11 +27,11 @@ struct TrainingHistoryView: View {
                             .frame(maxWidth: .infinity)
                     }
                 } else {
-                    ForEach(recentWorkouts, id: \.date) { load in
+                    ForEach(workouts, id: \.uuid) { w in
                         NavigationLink {
-                            WorkoutDetailView(load: load)
+                            WorkoutDetailView(workout: w)
                         } label: {
-                            workoutRow(load)
+                            workoutRow(w)
                         }
                         .buttonStyle(.plain)
                     }
@@ -34,88 +39,102 @@ struct TrainingHistoryView: View {
             }
             .padding(.horizontal, 6)
         }
+        .onAppear(perform: load)
     }
 
-    private func workoutRow(_ load: DailyTrainingLoad) -> some View {
+    private func load() {
+        Task {
+            let ws = (try? await HealthKitManager.shared.fetchWorkouts(daysBack: 60)) ?? []
+            await MainActor.run {
+                self.workouts = ws.sorted { $0.startDate > $1.startDate }
+                self.loading = false
+            }
+        }
+    }
+
+    private func workoutRow(_ w: HKWorkout) -> some View {
         CardView {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
-                    Text(load.workoutType ?? "운동")
+                    Text(w.workoutActivityType.name)
                         .font(.system(size: 13, weight: .semibold))
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.system(size: 9))
                         .foregroundStyle(Color(white: 0.35))
-                    Text(load.date.formatted(.dateTime.month(.abbreviated).day()))
+                    Text(w.startDate.formatted(.dateTime.month(.abbreviated).day().hour().minute()))
                         .font(.system(size: 10))
                         .foregroundStyle(Color(white: 0.55))
                 }
 
                 HStack(spacing: 0) {
-                    workoutMetric(label: "TRIMP", value: "\(Int(load.trimp))", color: trimpColor(load.trimp))
-                    Spacer()
-                    if let avg = load.avgHR {
-                        workoutMetric(label: "평균HR", value: "\(Int(avg))", color: .white)
+                    let km = Self.distanceKm(w)
+                    if km > 0 {
+                        metric("거리", String(format: "%.2f", km), "km", Color(red: 0.35, green: 0.65, blue: 1.0))
+                        Spacer()
                     }
-                    Spacer()
-                    if let max = load.maxHR {
-                        workoutMetric(label: "최대HR", value: "\(Int(max))", color: Color(red: 1.0, green: 0.35, blue: 0.35))
+                    metric("시간", "\(Int(w.duration / 60))", "분", .white)
+                    if let cal = Self.calories(w) {
+                        Spacer()
+                        metric("칼로리", "\(Int(cal))", "", Color(red: 1.0, green: 0.65, blue: 0.2))
                     }
-                    Spacer()
-                    workoutMetric(label: "시간", value: "\(Int(load.durationMinutes))분", color: .white)
-                }
-
-                HStack(spacing: 8) {
-                    miniLabel("CTL", value: "\(Int(load.ctl))", color: Color(red: 0.35, green: 0.65, blue: 1.0))
-                    miniLabel("ATL", value: "\(Int(load.atl))", color: Color(red: 0.7, green: 0.45, blue: 1.0))
-                    miniLabel("TSB", value: "\(Int(load.tsb))", color: load.tsb > 0
-                              ? Color(red: 0.3, green: 0.85, blue: 0.45)
-                              : Color(red: 1.0, green: 0.65, blue: 0.2))
+                    if let hr = Self.avgHR(w) {
+                        Spacer()
+                        metric("평균HR", "\(Int(hr))", "", Color(red: 1.0, green: 0.35, blue: 0.35))
+                    }
                 }
             }
         }
     }
 
-    private func workoutMetric(label: String, value: String, color: Color) -> some View {
+    private func metric(_ label: String, _ value: String, _ unit: String, _ color: Color) -> some View {
         VStack(spacing: 1) {
             Text(label).font(.system(size: 8)).foregroundStyle(Color(white: 0.55))
-            Text(value).font(.system(size: 13, weight: .bold, design: .rounded)).foregroundStyle(color)
+            HStack(alignment: .firstTextBaseline, spacing: 1) {
+                Text(value).font(.system(size: 13, weight: .bold, design: .rounded)).foregroundStyle(color)
+                if !unit.isEmpty { Text(unit).font(.system(size: 8)).foregroundStyle(Color(white: 0.5)) }
+            }
         }
     }
 
-    private func miniLabel(_ title: String, value: String, color: Color) -> some View {
-        HStack(spacing: 2) {
-            Text(title).font(.system(size: 8)).foregroundStyle(color.opacity(0.7))
-            Text(value).font(.system(size: 9, weight: .semibold)).foregroundStyle(color)
+    // MARK: - HKWorkout stat helpers
+
+    static func distanceKm(_ w: HKWorkout) -> Double {
+        if let m = w.statistics(for: HKQuantityType(.distanceWalkingRunning))?.sumQuantity()?.doubleValue(for: .meter()) {
+            return m / 1000.0
         }
+        if let m = w.statistics(for: HKQuantityType(.distanceCycling))?.sumQuantity()?.doubleValue(for: .meter()) {
+            return m / 1000.0
+        }
+        return 0
     }
 
-    private func trimpColor(_ trimp: Double) -> Color {
-        switch trimp {
-        case 150...: return Color(red: 1.0, green: 0.35, blue: 0.35)
-        case 100..<150: return Color(red: 1.0, green: 0.65, blue: 0.2)
-        default: return Color(red: 0.35, green: 0.65, blue: 1.0)
-        }
+    static func calories(_ w: HKWorkout) -> Double? {
+        w.statistics(for: HKQuantityType(.activeEnergyBurned))?.sumQuantity()?.doubleValue(for: .kilocalorie())
+    }
+
+    static func avgHR(_ w: HKWorkout) -> Double? {
+        let unit = HKUnit.count().unitDivided(by: .minute())
+        return w.statistics(for: HKQuantityType(.heartRate))?.averageQuantity()?.doubleValue(for: unit)
     }
 }
 
 // MARK: - Workout Detail with Route
 
 struct WorkoutDetailView: View {
-    let load: DailyTrainingLoad
+    let workout: HKWorkout
 
     @State private var locations: [CLLocation] = []
-    @State private var isLoadingRoute = false
     @State private var distance: Double?
     @State private var pace: Double?
 
     var body: some View {
         WorkoutRouteView(
             locations: locations,
-            workoutType: load.workoutType ?? "운동",
-            date: load.date,
+            workoutType: workout.workoutActivityType.name,
+            date: workout.startDate,
             distance: distance,
-            duration: load.durationMinutes,
+            duration: workout.duration / 60.0,
             pace: pace
         )
         .onAppear { loadRoute() }
@@ -130,25 +149,19 @@ struct WorkoutDetailView: View {
             NavigationLink {
                 FlyoverReplayView(
                     locations: locations,
-                    workoutType: load.workoutType ?? "운동",
-                    date: load.date
+                    workoutType: workout.workoutActivityType.name,
+                    date: workout.startDate
                 )
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "play.circle.fill")
-                        .font(.system(size: 20))
-                    Text("경로 플라이오버 영상")
-                        .font(.system(size: 15, weight: .semibold))
+                    Image(systemName: "play.circle.fill").font(.system(size: 20))
+                    Text("경로 플라이오버 영상").font(.system(size: 15, weight: .semibold))
                     Spacer()
-                    Image(systemName: "video.fill")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
+                    Image(systemName: "video.fill").font(.system(size: 13)).foregroundStyle(.secondary)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
+                .padding(.horizontal, 16).padding(.vertical, 14)
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-                .padding(.horizontal)
-                .padding(.bottom, 8)
+                .padding(.horizontal).padding(.bottom, 8)
             }
             .buttonStyle(.plain)
         }
@@ -156,13 +169,18 @@ struct WorkoutDetailView: View {
     #endif
 
     private func loadRoute() {
-        isLoadingRoute = true
+        let meters = TrainingHistoryView.distanceKm(workout) * 1000.0
+        if meters > 0 {
+            distance = meters
+            if workout.duration > 0 { pace = workout.duration / (meters / 1000.0) }
+        }
 
         #if targetEnvironment(simulator)
         loadMockRoute()
         #else
         Task {
-            await fetchRealRoute()
+            let locs = (try? await HealthKitManager.shared.fetchWorkoutRoute(for: workout)) ?? []
+            await MainActor.run { self.locations = locs }
         }
         #endif
     }
@@ -171,110 +189,30 @@ struct WorkoutDetailView: View {
     private func loadMockRoute() {
         // Mock: 한강 반포대교~동작대교 러닝 코스 (약 5km)
         let baseCoords: [(Double, Double)] = [
-            (37.5080, 126.9950),  // 반포한강공원
-            (37.5082, 126.9970),
-            (37.5085, 126.9995),
-            (37.5083, 127.0020),
-            (37.5080, 127.0045),
-            (37.5078, 127.0070),
-            (37.5075, 127.0095),
-            (37.5073, 127.0120),
-            (37.5070, 127.0145),  // 동작대교 방향
-            (37.5068, 127.0170),
-            (37.5072, 127.0175),  // 턴어라운드
-            (37.5075, 127.0150),
-            (37.5078, 127.0125),
-            (37.5080, 127.0100),
-            (37.5082, 127.0075),
-            (37.5084, 127.0050),
-            (37.5083, 127.0025),
-            (37.5081, 127.0000),
-            (37.5080, 126.9975),
-            (37.5079, 126.9950),  // 복귀
+            (37.5080, 126.9950), (37.5082, 126.9970), (37.5085, 126.9995), (37.5083, 127.0020),
+            (37.5080, 127.0045), (37.5078, 127.0070), (37.5075, 127.0095), (37.5073, 127.0120),
+            (37.5070, 127.0145), (37.5068, 127.0170), (37.5072, 127.0175), (37.5075, 127.0150),
+            (37.5078, 127.0125), (37.5080, 127.0100), (37.5082, 127.0075), (37.5084, 127.0050),
+            (37.5083, 127.0025), (37.5081, 127.0000), (37.5080, 126.9975), (37.5079, 126.9950),
         ]
-
-        // Add slight jitter for realism
-        var coords: [CLLocationCoordinate2D] = []
-        for (lat, lon) in baseCoords {
-            let jitterLat = Double.random(in: -0.0002...0.0002)
-            let jitterLon = Double.random(in: -0.0002...0.0002)
-            coords.append(CLLocationCoordinate2D(latitude: lat + jitterLat, longitude: lon + jitterLon))
-        }
-
-        // Interpolate between points for smoother line
         var interpolated: [CLLocationCoordinate2D] = []
-        for i in 0..<(coords.count - 1) {
-            let start = coords[i]
-            let end = coords[i + 1]
-            let steps = 5
-            for s in 0..<steps {
-                let fraction = Double(s) / Double(steps)
-                let lat = start.latitude + (end.latitude - start.latitude) * fraction
-                let lon = start.longitude + (end.longitude - start.longitude) * fraction
-                interpolated.append(CLLocationCoordinate2D(latitude: lat, longitude: lon))
+        for i in 0..<(baseCoords.count - 1) {
+            let s = baseCoords[i], e = baseCoords[i + 1]
+            for step in 0..<5 {
+                let f = Double(step) / 5.0
+                interpolated.append(.init(latitude: s.0 + (e.0 - s.0) * f, longitude: s.1 + (e.1 - s.1) * f))
             }
         }
-        interpolated.append(coords.last!)
-
-        // Synthesize a hilly altitude profile (base ~30m, one main climb + rolling bumps)
+        interpolated.append(.init(latitude: baseCoords.last!.0, longitude: baseCoords.last!.1))
         let now = Date()
         let count = interpolated.count
-        var locs: [CLLocation] = []
-        for (i, c) in interpolated.enumerated() {
-            let progress = Double(i) / Double(max(count - 1, 1))
-            let altitude = 30.0
-                + 35.0 * sin(progress * .pi)        // main hill up then down
-                + 5.0 * sin(progress * .pi * 6)     // rolling bumps
-            locs.append(CLLocation(
-                coordinate: c,
-                altitude: altitude,
-                horizontalAccuracy: 5,
-                verticalAccuracy: 5,
-                timestamp: now
-            ))
+        locations = interpolated.enumerated().map { i, c in
+            let p = Double(i) / Double(max(count - 1, 1))
+            let altitude = 30.0 + 35.0 * sin(p * .pi) + 5.0 * sin(p * .pi * 6)
+            return CLLocation(coordinate: c, altitude: altitude, horizontalAccuracy: 5, verticalAccuracy: 5, timestamp: now)
         }
-
-        self.locations = locs
-        self.distance = 5000 // 5km
-        self.pace = (load.durationMinutes * 60) / 5.0 // seconds per km
-        isLoadingRoute = false
+        if distance == nil { distance = 5000 }
+        if pace == nil, workout.duration > 0 { pace = workout.duration / 5.0 }
     }
     #endif
-
-    private func fetchRealRoute() async {
-        do {
-            let workouts = try await HealthKitManager.shared.fetchWorkouts(daysBack: 90)
-            // Find workout matching this load's date
-            let cal = Calendar.current
-            guard let workout = workouts.first(where: {
-                cal.isDate($0.startDate, inSameDayAs: load.date)
-            }) else {
-                isLoadingRoute = false
-                return
-            }
-
-            let routeLocations = try await HealthKitManager.shared.fetchWorkoutRoute(for: workout)
-
-            // Calculate total distance
-            var totalDist = 0.0
-            if routeLocations.count >= 2 {
-                for i in 1..<routeLocations.count {
-                    totalDist += routeLocations[i].distance(from: routeLocations[i - 1])
-                }
-            }
-
-            await MainActor.run {
-                self.locations = routeLocations
-                self.distance = totalDist
-                if totalDist > 0 {
-                    self.pace = (load.durationMinutes * 60) / (totalDist / 1000)
-                }
-                self.isLoadingRoute = false
-            }
-        } catch {
-            await MainActor.run {
-                isLoadingRoute = false
-            }
-        }
-    }
 }
