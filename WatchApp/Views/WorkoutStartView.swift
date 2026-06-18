@@ -181,6 +181,9 @@ struct ActiveWorkoutView: View {
         TabView(selection: $page) {
             primaryPage.tag(0)
             pacePage.tag(1)
+            if !manager.isFreeMode {
+                virtualPacerPage.tag(8)   // gap vs virtual runner (pace-guided only)
+            }
             heartRatePage.tag(2)
             if manager.workoutType == .running {
                 dynamicsPage.tag(3)
@@ -335,6 +338,34 @@ struct ActiveWorkoutView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var virtualPacerPage: some View {
+        let gapSec = manager.virtualPartnerGapSeconds
+        let ahead = gapSec >= 0
+        let color = ahead ? Color(red: 0.3, green: 0.85, blue: 0.45) : Color(red: 1, green: 0.4, blue: 0.4)
+        return VStack(spacing: 4) {
+            Text("가상 페이서")
+                .font(.system(size: 13, weight: .semibold)).textCase(.uppercase)
+                .foregroundStyle(Color(white: 0.55))
+            Image(systemName: ahead ? "hare.fill" : "tortoise.fill")
+                .font(.system(size: 22)).foregroundStyle(color)
+            Text((ahead ? "+" : "−") + formatGap(gapSec))
+                .font(.system(size: 56, weight: .bold, design: .rounded))
+                .monospacedDigit().minimumScaleFactor(0.4).lineLimit(1)
+                .foregroundStyle(color)
+            Text(String(format: "%@%.0f m", ahead ? "+" : "−", abs(manager.virtualPartnerGapMeters)))
+                .font(.system(size: 15, weight: .semibold)).foregroundStyle(color)
+            Text(ahead ? "가상 러너보다 앞섬" : "가상 러너보다 뒤짐")
+                .font(.system(size: 10)).foregroundStyle(Color(white: 0.5))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func formatGap(_ seconds: Double) -> String {
+        let a = abs(Int(seconds.rounded()))
+        let m = a / 60, s = a % 60
+        return m > 0 ? String(format: "%d:%02d", m, s) : "\(s)초"
     }
 
     private var elevationPage: some View {

@@ -36,6 +36,10 @@ final class WorkoutManager: NSObject, ObservableObject {
     @Published var currentSpeed: Double = 0        // m/s for cycling
     @Published var averageSpeed: Double = 0        // m/s for cycling
 
+    // Virtual Partner — gap vs a runner holding the target pace
+    @Published var virtualPartnerGapMeters: Double = 0   // + ahead, − behind
+    @Published var virtualPartnerGapSeconds: Double = 0   // + ahead, − behind
+
     // GPS / elevation
     @Published var totalAscent: Double = 0         // meters climbed
     @Published var totalDescent: Double = 0        // meters descended
@@ -541,6 +545,23 @@ final class WorkoutManager: NSObject, ObservableObject {
             averageHeartRate = hrSamples.reduce(0, +) / Double(hrSamples.count)
         }
 
+        // --- Virtual Partner: gap vs a runner holding the target pace ---
+        if targetPacePerKm > 0 {
+            let ghostDistance = (elapsedSeconds / targetPacePerKm) * 1000.0  // m ghost has covered
+            let gap = totalDistance - ghostDistance                          // + ahead, − behind
+            let prev = virtualPartnerGapMeters
+            // Haptic when you cross the ghost (ahead ↔ behind)
+            if abs(gap) > 3, (gap >= 0) != (prev >= 0) {
+                let now = Date()
+                if now.timeIntervalSince(lastHapticTime) > hapticCooldown {
+                    lastHapticTime = now
+                    playHaptic(gap >= 0 ? 4 : 5)  // directionUp = pulled ahead, down = fell behind
+                }
+            }
+            virtualPartnerGapMeters = gap
+            virtualPartnerGapSeconds = gap * (targetPacePerKm / 1000.0)  // m → s at target pace
+        }
+
         // Pace status check (only for pace-guided mode)
         guard targetPacePerKm > 0 else { return }
 
@@ -586,6 +607,8 @@ final class WorkoutManager: NSObject, ObservableObject {
         lastKmTime = 0
         currentSpeed = 0
         averageSpeed = 0
+        virtualPartnerGapMeters = 0
+        virtualPartnerGapSeconds = 0
         totalAscent = 0
         totalDescent = 0
         currentAltitude = 0
