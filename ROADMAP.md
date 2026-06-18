@@ -5,6 +5,18 @@ Status: ✅ done · 🔨 in progress · ⬜ planned · 🔒 premium/needs access
 Build/install: see [BUILDING.md](BUILDING.md). All work is committed per-feature; the
 watch app installs from Xcode (scheme **SportsDashboard Watch App** → your Apple Watch).
 
+## Run-feedback fixes (from real runs)
+- ✅ #3 Workout history now lists real HKWorkouts (saved runs always appear)
+- ✅ #2 Real auto-pause (freezes timer on stop, auto-resumes on movement)
+- ✅ #6 Bigger live-map stats (distance/time/pace/avg in a 2×2 panel)
+- ✅ #1 Current + average pace shown together (primary + map)
+- ✅ #7 Korean voice km-split announcements (current split + average)
+- ✅ GAP (grade-adjusted pace) — verifies/augments GPS pace with slope correction
+- ⚠️ #4 Return to app after Siri/music takeover — NOT possible via public watchOS API
+  (no programmatic foreground; governed by watchOS auto-return setting). Deferred.
+- ⚠️ #5 Wrist-raise → show pace 5s → revert — watchOS controls wake; reliable/clean
+  implementation not available, conflicts with manual paging. Deferred.
+
 ## ✅ Done (this work)
 - GPS workout-route save/load authorization fix (HKSeriesType.workoutRoute)
 - Garmin-style Digital-Crown vertical data screens, big text (`.verticalPage`)
