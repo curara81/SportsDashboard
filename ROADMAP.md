@@ -46,10 +46,14 @@ watch app installs from Xcode (scheme **SportsDashboard Watch App** → your App
 ## 🔨 Phase 4 — intelligence
 - ✅ Burner: live fat/carb substrate split from intensity (data screen)
 - ✅ Cardio Fitness level (VO2max → age/sex tier, on dashboard) + tests
-- ⬜ Target Load (daily how-much-to-train band) + deterministic Daily Run recommendation
+- ✅ Cardiac decoupling live (aerobic durability, data screen)
+- ⬜ **Target Load (daily how-much-to-train band) + Daily Run recommendation** ← RESUME HERE
 - ⬜ VDOT-based race prediction (blend VO2max + load) — upgrade Riegel
-- ⬜ Cardiac decoupling live (extend existing cardiac-drift) = aerobic durability
 - ⬜ Form Drift Detector (fatigue from running-dynamics decay + cue)
+
+## UI
+- ✅ In-workout Crown data screens (one metric/screen, big text)
+- ✅ Dashboard Crown-paged (one metric/screen, replaces long scroll)
 
 ## ⬜ Phase 5 — safety & extras
 - Safety Beacon: Action Button + 86 dB siren + Find My live share + dead-man timer
