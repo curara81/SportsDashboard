@@ -51,12 +51,16 @@ watch app installs from Xcode (scheme **SportsDashboard Watch App** → your App
 - ✅ VDOT (Daniels) VO2max-based race prediction (RacePredictionView) + tests
 - ✅ Form Drift Detector (cadence/GCT decay vs baseline + haptic cue)
 
-## ⬜ Phase 5 — safety & extras (next)
-- Safety Beacon: Action Button + 86 dB siren + Find My live share + dead-man timer
-- Adaptive fueling/hydration coach (sweat-rate learning)
-- Heat/altitude auto-derating of pace targets
-- Shoe mileage tracking + retirement reminder
-- Auto-highlights reel on the flyover (fastest km, PR, HR peak)
+## 🔨 Phase 5 — safety & extras
+- ✅ Hydration/fuel coach (timed Korean voice reminder; adaptive sweat-rate = later)
+- ✅ Shoe mileage tracker + retirement reminder
+- ✅ Korean voice for ALL key real-time alerts (pace, auto-pause, intervals, form, km)
+- ⬜ Auto-highlights reel on the flyover (fastest km, PR, HR peak) — iOS, feasible, next
+- ⚠️ Safety Beacon — mostly NOT possible: no public API for the Ultra 86 dB siren,
+  Find My live share, programmatic Action Button, or sending messages from watchOS.
+  Feasible subset = loud in-app alarm sound only. Deferred.
+- ⚠️ Heat/altitude pace derating — needs WeatherKit (temp/humidity) + entitlement;
+  altitude-only is low value. Deferred.
 
 ## ⬜ Phase 3 leftover (deferred — needs course infra)
 - GPX course import (iPhone) + WatchConnectivity sync + on-watch course follow
