@@ -48,6 +48,7 @@ final class WorkoutManager: NSObject, ObservableObject {
     @Published var currentGrade: Double = 0        // slope, decimal (0.05 = 5%)
     @Published var gradeAdjustedPace: Double = 0   // GAP, seconds per km
     @Published var aerobicDecoupling: Double = 0   // % HR-efficiency drift vs early baseline
+    @Published var formDrift: Double = 0           // % running-form degradation vs early baseline
     @Published var gpsAccuracy: CLLocationAccuracy = -1  // <0 = no fix yet
     @Published var hasGPSFix = false
     @Published var routePointCount = 0
@@ -195,6 +196,9 @@ final class WorkoutManager: NSObject, ObservableObject {
     private var lastGradeLocation: CLLocation?  // for grade (GAP) computation
     private var baselineEF: Double = 0          // early efficiency factor (speed/HR)
     private var efEMA: Double = 0               // smoothed current efficiency factor
+    private var baselineCadence: Double = 0     // early form baseline (spm)
+    private var baselineGCT: Double = 0         // early form baseline (ms)
+    private var formCueGiven = false
     private var usesGPS = false                 // outdoor sports only
 
     private let hapticCooldown: TimeInterval = 10
@@ -714,6 +718,28 @@ final class WorkoutManager: NSObject, ObservableObject {
             }
         }
 
+        // Form drift (running): cadence drop + ground-contact rise vs early baseline.
+        if workoutType == .running, currentCadence > 0, currentGroundContactTime > 0 {
+            if baselineCadence == 0 && elapsedSeconds > 180 && elapsedSeconds < 360 {
+                baselineCadence = currentCadence
+                baselineGCT = currentGroundContactTime
+            }
+            if baselineCadence > 0 && baselineGCT > 0 {
+                let cadDrop = max(0, (baselineCadence - currentCadence) / baselineCadence)
+                let gctRise = max(0, (currentGroundContactTime - baselineGCT) / baselineGCT)
+                formDrift = (cadDrop + gctRise) / 2 * 100
+                if formDrift > 8 && !formCueGiven {
+                    formCueGiven = true
+                    if Date().timeIntervalSince(lastHapticTime) > hapticCooldown {
+                        lastHapticTime = Date()
+                        playHaptic(5) // directionDown — form fading, shorten stride / lift cadence
+                    }
+                } else if formDrift < 5 {
+                    formCueGiven = false
+                }
+            }
+        }
+
         // Structured interval plan: advance step when its goal is met
         advancePlanIfNeeded()
 
@@ -778,9 +804,13 @@ final class WorkoutManager: NSObject, ObservableObject {
         currentGrade = 0
         gradeAdjustedPace = 0
         aerobicDecoupling = 0
+        formDrift = 0
         lastGradeLocation = nil
         baselineEF = 0
         efEMA = 0
+        baselineCadence = 0
+        baselineGCT = 0
+        formCueGiven = false
         gpsAccuracy = -1
         hasGPSFix = false
         routePointCount = 0

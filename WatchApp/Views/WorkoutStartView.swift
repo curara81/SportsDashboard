@@ -224,6 +224,7 @@ struct ActiveWorkoutView: View {
             }
             if manager.workoutType == .running && manager.elapsedSeconds > 360 {
                 decouplingPage.tag(12)   // aerobic durability (after baseline window)
+                formDriftPage.tag(13)    // running-form fatigue
             }
             elevationPage.tag(4)
             if manager.workoutType.usePace {
@@ -454,6 +455,21 @@ struct ActiveWorkoutView: View {
                 miniMetric("오르막", "\(Int(manager.totalAscent))", Color(red: 1, green: 0.5, blue: 0.3))
                 miniMetric("내리막", "\(Int(manager.totalDescent))", Color(red: 0.35, green: 0.65, blue: 1.0))
             }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Form drift — running-form degradation (cadence drop + ground-contact rise).
+    private var formDriftPage: some View {
+        let d = manager.formDrift
+        let color = d < 4 ? Color(red: 0.3, green: 0.85, blue: 0.45)
+            : (d < 8 ? Color(red: 1, green: 0.65, blue: 0.2) : Color(red: 1, green: 0.4, blue: 0.4))
+        return VStack(spacing: 6) {
+            bigField("폼 드리프트", String(format: "%.0f", d), "%", color: color)
+            Text(d < 4 ? "폼 안정" : d < 8 ? "약간 흐트러짐" : "보폭↓ · 케이던스↑")
+                .font(.system(size: 12, weight: .semibold)).foregroundStyle(color)
+            Text("초반 폼 대비 피로")
+                .font(.system(size: 10)).foregroundStyle(Color(white: 0.5))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
