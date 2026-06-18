@@ -62,6 +62,11 @@ final class WorkoutManager: NSObject, ObservableObject {
     // Cadence
     @Published var currentCadence: Double = 0       // steps per minute
 
+    // Burner — live fat vs carbohydrate substrate use
+    @Published var fatPercent: Double = 0          // % of energy from fat
+    @Published var fatGramsPerHour: Double = 0
+    @Published var carbGramsPerHour: Double = 0
+
     // Running dynamics (HealthKit auto-collects these on outdoor runs, watchOS 9+)
     @Published var currentRunningPower: Double = 0        // watts
     @Published var currentStrideLength: Double = 0        // meters
@@ -627,6 +632,13 @@ final class WorkoutManager: NSObject, ObservableObject {
             var z = 0
             for (i, lb) in zoneLowerBounds.enumerated() where currentHeartRate >= lb { z = i }
             zoneSeconds[z] += 1
+
+            // Burner: fat fraction drops as intensity (zone) rises; split kcal rate.
+            let fatFrac = [0.85, 0.65, 0.45, 0.20, 0.05][z]
+            let kcalPerHour = elapsedSeconds > 0 ? activeCalories / (elapsedSeconds / 3600.0) : 0
+            fatPercent = fatFrac * 100
+            fatGramsPerHour = (kcalPerHour * fatFrac) / 9.0       // 9 kcal/g fat
+            carbGramsPerHour = (kcalPerHour * (1 - fatFrac)) / 4.0 // 4 kcal/g carb
         }
 
         // --- Current lap live counters ---
@@ -759,6 +771,9 @@ final class WorkoutManager: NSObject, ObservableObject {
         bearingToStart = 0
         currentHeading = 0
         currentCadence = 0
+        fatPercent = 0
+        fatGramsPerHour = 0
+        carbGramsPerHour = 0
         currentRunningPower = 0
         currentStrideLength = 0
         currentVerticalOscillation = 0

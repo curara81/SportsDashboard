@@ -219,6 +219,9 @@ struct ActiveWorkoutView: View {
             if manager.workoutType == .running {
                 dynamicsPage.tag(3)
             }
+            if manager.fatPercent > 0 {
+                burnerPage.tag(11)   // live fat/carb
+            }
             elevationPage.tag(4)
             if manager.workoutType.usePace {
                 projectionPage.tag(9)   // live finish-time projection
@@ -447,6 +450,18 @@ struct ActiveWorkoutView: View {
             HStack(spacing: 18) {
                 miniMetric("오르막", "\(Int(manager.totalAscent))", Color(red: 1, green: 0.5, blue: 0.3))
                 miniMetric("내리막", "\(Int(manager.totalDescent))", Color(red: 0.35, green: 0.65, blue: 1.0))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Burner: live fat vs carbohydrate substrate use.
+    private var burnerPage: some View {
+        VStack(spacing: 8) {
+            bigField("지방 연소", "\(Int(manager.fatPercent))", "%", color: Color(red: 1, green: 0.7, blue: 0.3))
+            HStack(spacing: 16) {
+                miniMetric("지방", String(format: "%.0f g/h", manager.fatGramsPerHour), Color(red: 1, green: 0.7, blue: 0.3))
+                miniMetric("탄수", String(format: "%.0f g/h", manager.carbGramsPerHour), Color(red: 0.4, green: 0.7, blue: 1.0))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
