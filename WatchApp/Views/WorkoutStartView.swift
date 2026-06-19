@@ -194,6 +194,18 @@ struct CountdownView: View {
 
 // MARK: - Active Workout View (Apple-style paged: Controls | Metrics)
 
+private extension View {
+    /// Fills the watch screen with a vivid tinted gradient behind a data page.
+    func metricScreen(_ tint: Color) -> some View {
+        self.frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(
+                LinearGradient(colors: [tint.opacity(0.55), .black],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+                    .ignoresSafeArea()
+            )
+    }
+}
+
 struct ActiveWorkoutView: View {
     @ObservedObject var manager: WorkoutManager
     @State private var page = 0   // start on the primary big-metric page
@@ -246,20 +258,21 @@ struct ActiveWorkoutView: View {
     private func bigField(_ label: String, _ value: String, _ unit: String = "", color: Color = .white) -> some View {
         VStack(spacing: 0) {
             Text(label)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 15, weight: .bold))
                 .textCase(.uppercase)
-                .foregroundStyle(Color(white: 0.55))
+                .foregroundStyle(color.opacity(0.85))
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value)
-                    .font(.system(size: 64, weight: .bold, design: .rounded))
+                    .font(.system(size: 90, weight: .heavy, design: .rounded))
                     .monospacedDigit()
-                    .minimumScaleFactor(0.4)
+                    .minimumScaleFactor(0.35)
                     .lineLimit(1)
                     .foregroundStyle(color)
+                    .shadow(color: color.opacity(0.5), radius: 6)
                 if !unit.isEmpty {
                     Text(unit)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(Color(white: 0.55))
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(color.opacity(0.7))
                 }
             }
         }
@@ -296,21 +309,24 @@ struct ActiveWorkoutView: View {
                 Spacer()
             }
             Text(formatTime(manager.elapsedSeconds))
-                .font(.system(size: 50, weight: .bold, design: .rounded))
-                .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
+                .font(.system(size: 64, weight: .heavy, design: .rounded))
+                .monospacedDigit().minimumScaleFactor(0.4).lineLimit(1)
                 .foregroundStyle(.white)
+                .shadow(color: sportColor.opacity(0.5), radius: 6)
             HStack(spacing: 0) {
                 VStack(spacing: 0) {
                     Text("거리").font(.system(size: 10)).foregroundStyle(Color(white: 0.55))
                     Text(String(format: "%.2f", manager.totalDistance / 1000))
-                        .font(.system(size: 24, weight: .bold, design: .rounded)).monospacedDigit()
-                    Text("km").font(.system(size: 9)).foregroundStyle(Color(white: 0.5))
+                        .font(.system(size: 34, weight: .heavy, design: .rounded)).monospacedDigit()
+                        .minimumScaleFactor(0.5).lineLimit(1)
+                    Text("km").font(.system(size: 10)).foregroundStyle(Color(white: 0.6))
                 }
                 Spacer()
                 VStack(spacing: 0) {
                     Text(manager.workoutType.usePace ? "페이스" : "속도").font(.system(size: 10)).foregroundStyle(Color(white: 0.55))
                     Text(primaryPaceValue)
-                        .font(.system(size: 24, weight: .bold, design: .rounded)).monospacedDigit()
+                        .font(.system(size: 34, weight: .heavy, design: .rounded)).monospacedDigit()
+                        .minimumScaleFactor(0.5).lineLimit(1)
                         .foregroundStyle(manager.isFreeMode ? .white : paceStatusColor)
                     Text(manager.workoutType.usePace
                          ? "평균 " + (manager.averagePace > 0 ? formatPace(manager.averagePace) : "--:--")
@@ -337,6 +353,7 @@ struct ActiveWorkoutView: View {
             .padding(.top, 2)
         }
         .padding(.horizontal, 10)
+        .metricScreen(sportColor)
     }
 
     private var primaryPaceValue: String {
@@ -367,7 +384,7 @@ struct ActiveWorkoutView: View {
                 miniMetric("평균", manager.averageSpeed > 0 ? String(format: "%.1f km/h", manager.averageSpeed * 3.6) : "--", .white)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .metricScreen(manager.isFreeMode ? sportColor : paceStatusColor)
     }
 
     private var heartRatePage: some View {
@@ -379,7 +396,7 @@ struct ActiveWorkoutView: View {
                 hrZoneGauge.padding(.horizontal, 6)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .metricScreen(Color(red: 1, green: 0.35, blue: 0.35))
     }
 
     private var dynamicsPage: some View {
@@ -408,7 +425,7 @@ struct ActiveWorkoutView: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .metricScreen(Color(red: 1, green: 0.6, blue: 0.2))
     }
 
     private var virtualPacerPage: some View {
@@ -430,7 +447,7 @@ struct ActiveWorkoutView: View {
             Text(ahead ? "가상 러너보다 앞섬" : "가상 러너보다 뒤짐")
                 .font(.system(size: 10)).foregroundStyle(Color(white: 0.5))
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .metricScreen(color)
     }
 
     /// Cadence-coach color: green near target, amber off, red far off.
@@ -456,7 +473,7 @@ struct ActiveWorkoutView: View {
                 miniMetric("내리막", "\(Int(manager.totalDescent))", Color(red: 0.35, green: 0.65, blue: 1.0))
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .metricScreen(Color(red: 0.35, green: 0.65, blue: 1.0))
     }
 
     /// Form drift — running-form degradation (cadence drop + ground-contact rise).
@@ -471,7 +488,7 @@ struct ActiveWorkoutView: View {
             Text("초반 폼 대비 피로")
                 .font(.system(size: 10)).foregroundStyle(Color(white: 0.5))
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .metricScreen(color)
     }
 
     /// Cardiac decoupling — aerobic durability (HR-efficiency drift vs early baseline).
@@ -486,7 +503,7 @@ struct ActiveWorkoutView: View {
             Text("초반 대비 심박 효율 변화")
                 .font(.system(size: 10)).foregroundStyle(Color(white: 0.5))
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .metricScreen(color)
     }
 
     /// Burner: live fat vs carbohydrate substrate use.
@@ -498,7 +515,7 @@ struct ActiveWorkoutView: View {
                 miniMetric("탄수", String(format: "%.0f g/h", manager.carbGramsPerHour), Color(red: 0.4, green: 0.7, blue: 1.0))
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .metricScreen(Color(red: 1, green: 0.7, blue: 0.3))
     }
 
     /// Back-to-Start: compass arrow (relative to heading) + straight-line distance home.
@@ -520,7 +537,7 @@ struct ActiveWorkoutView: View {
             Text("직선 거리")
                 .font(.system(size: 10)).foregroundStyle(Color(white: 0.5))
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .metricScreen(sportColor)
     }
 
     /// Live finish-time projection for standard distances from current average pace.
@@ -540,8 +557,8 @@ struct ActiveWorkoutView: View {
                     .font(.system(size: 11)).foregroundStyle(Color(white: 0.5))
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, 14)
+        .metricScreen(Color(red: 0.35, green: 0.65, blue: 1.0))
     }
 
     private func projRow(_ label: String, _ seconds: Double) -> some View {
@@ -1262,12 +1279,17 @@ struct ActiveWorkoutView: View {
     private func miniMetric(_ label: String, _ value: String, _ color: Color) -> some View {
         VStack(spacing: 1) {
             Text(label)
-                .font(.system(size: 8))
-                .foregroundStyle(Color(white: 0.4))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Color(white: 0.65))
+                .lineLimit(1).minimumScaleFactor(0.6)
             Text(value)
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
                 .foregroundStyle(color)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 7)
+        .background(color.opacity(0.16), in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func formatTime(_ seconds: TimeInterval) -> String {
