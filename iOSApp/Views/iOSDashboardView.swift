@@ -59,6 +59,9 @@ struct iOSDashboardView: View {
                     .foregroundStyle(.secondary)
                 Text("모닝 리포트")
                     .font(.largeTitle.bold())
+                    .foregroundStyle(
+                        LinearGradient(colors: [.blue, .cyan],
+                                       startPoint: .leading, endPoint: .trailing))
             }
             Spacer()
         }
@@ -87,7 +90,8 @@ struct iOSDashboardView: View {
                                     .rotationEffect(.degrees(-90))
                                 VStack(spacing: 0) {
                                     Text("\(Int(r.score))")
-                                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                                        .font(.system(size: 46, weight: .heavy, design: .rounded))
+                                        .foregroundStyle(readinessColor(r.score))
                                     Text(r.label)
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
@@ -109,11 +113,9 @@ struct iOSDashboardView: View {
             HStack(spacing: 12) {
                 iOSCard {
                     VStack(alignment: .leading, spacing: 6) {
-                        Label("트레이닝 상태", systemImage: vm.trainingStatus.icon)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        cardLabel("트레이닝 상태", vm.trainingStatus.icon, trainingStatusColor(vm.trainingStatus))
                         Text(vm.trainingStatus.rawValue)
-                            .font(.title2.bold())
+                            .font(.title.bold())
                             .foregroundStyle(trainingStatusColor(vm.trainingStatus))
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -121,13 +123,11 @@ struct iOSDashboardView: View {
 
                 iOSCard {
                     VStack(alignment: .leading, spacing: 6) {
-                        Label("VO2max", systemImage: "lungs.fill")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        cardLabel("VO2max", "lungs.fill", .cyan)
                         if let vo2 = vm.vo2max {
                             HStack(alignment: .firstTextBaseline, spacing: 2) {
                                 Text(String(format: "%.1f", vo2))
-                                    .font(.title2.bold())
+                                    .font(.title.bold())
                                     .foregroundStyle(.cyan)
                                 Text("ml/kg/min")
                                     .font(.caption2)
@@ -156,9 +156,7 @@ struct iOSDashboardView: View {
             if let tb = vm.trainingBalance {
                 iOSCard {
                     VStack(alignment: .leading, spacing: 12) {
-                        Label("트레이닝 밸런스", systemImage: "chart.line.uptrend.xyaxis")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        cardLabel("트레이닝 밸런스", "chart.line.uptrend.xyaxis", .blue)
 
                         HStack(spacing: 20) {
                             metricColumn("CTL", value: "\(Int(tb.ctl))", color: .blue)
@@ -194,9 +192,7 @@ struct iOSDashboardView: View {
             HStack(spacing: 12) {
                 iOSCard {
                     VStack(alignment: .leading, spacing: 6) {
-                        Label("ACWR", systemImage: "exclamationmark.shield")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        cardLabel("ACWR", "exclamationmark.shield", acwrColor(vm.acwr))
                         Text(String(format: "%.2f", vm.acwr))
                             .font(.title.bold())
                             .foregroundStyle(acwrColor(vm.acwr))
@@ -207,9 +203,7 @@ struct iOSDashboardView: View {
 
                 iOSCard {
                     VStack(alignment: .leading, spacing: 6) {
-                        Label("회복 시간", systemImage: "clock.arrow.circlepath")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        cardLabel("회복 시간", "clock.arrow.circlepath", .teal)
                         if let rt = vm.recoveryTime {
                             HStack(alignment: .firstTextBaseline, spacing: 2) {
                                 Text("\(rt.hours)")
@@ -232,9 +226,7 @@ struct iOSDashboardView: View {
             if let focus = vm.loadFocus {
                 iOSCard {
                     VStack(alignment: .leading, spacing: 10) {
-                        Label("트레이닝 부하 분포", systemImage: "chart.pie.fill")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        cardLabel("트레이닝 부하 분포", "chart.pie.fill", .orange)
 
                         GeometryReader { geo in
                             HStack(spacing: 2) {
@@ -271,9 +263,7 @@ struct iOSDashboardView: View {
             // Sleep + Sleep Stages
             iOSCard {
                 VStack(alignment: .leading, spacing: 10) {
-                    Label("수면", systemImage: "moon.fill")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    cardLabel("수면", "moon.fill", .indigo)
 
                     if let hours = vm.sleepHours {
                         HStack {
@@ -343,9 +333,7 @@ struct iOSDashboardView: View {
                 iOSCard {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
-                            Label("HRV", systemImage: "waveform.path.ecg")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            cardLabel("HRV", "waveform.path.ecg", .cyan)
                             Spacer()
                             if let hrv = vm.latestHRV {
                                 Text("\(Int(hrv))ms")
@@ -369,9 +357,7 @@ struct iOSDashboardView: View {
                 iOSCard {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
-                            Label("RHR", systemImage: "heart.fill")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            cardLabel("RHR", "heart.fill", .red)
                             Spacer()
                             if let rhr = vm.restingHR {
                                 Text("\(Int(rhr))bpm")
@@ -397,9 +383,7 @@ struct iOSDashboardView: View {
             if vm.runningPower != nil || vm.cadence != nil {
                 iOSCard {
                     VStack(alignment: .leading, spacing: 10) {
-                        Label("러닝 다이내믹스", systemImage: "figure.run")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        cardLabel("러닝 다이내믹스", "figure.run", .green)
 
                         HStack(spacing: 16) {
                             if let p = vm.runningPower { dynamicItem("파워", "\(Int(p))W", .orange) }
@@ -420,9 +404,7 @@ struct iOSDashboardView: View {
             if vm.bodyMass != nil {
                 iOSCard {
                     VStack(alignment: .leading, spacing: 8) {
-                        Label("체성분", systemImage: "figure.stand")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        cardLabel("체성분", "figure.stand", .mint)
                         HStack(spacing: 20) {
                             if let m = vm.bodyMass { metricColumn("체중", value: String(format: "%.1fkg", m), color: .primary) }
                             if let f = vm.bodyFatPercentage { metricColumn("체지방", value: String(format: "%.1f%%", f), color: .orange) }
@@ -462,6 +444,15 @@ struct iOSDashboardView: View {
     }
 
     // MARK: - Components
+
+    /// Colored-icon card header (replaces gray Labels for a more colorful look).
+    private func cardLabel(_ title: String, _ icon: String, _ tint: Color) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon).font(.caption).foregroundStyle(tint)
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+        }
+    }
 
     private func scoreRow(icon: String, title: String, value: String, score: Double, color: Color) -> some View {
         iOSCard {
